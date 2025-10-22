@@ -68,7 +68,7 @@ function createVault(
 
 ### 📊 System Flow Diagram
 
-https://github.com/Ekinoxis-evm/digitalhouse_contracts/blob/main/digital-house-flow.mmd
+[View Flow Diagram](./docs/diagrams/digital-house-flow.mmd)
 
 ### 🔄 Sequence Diagram: Complete Process with Cession
 
@@ -324,7 +324,7 @@ Digital House uses **Hardhat Ignition** for deterministic and upgradeable deploy
 
 ### Deployment Commands
 
-#### Local Network (Development)npm run node
+#### Local Network (Development)
 ```bash
 # Start local node
 npm run node
@@ -344,11 +344,28 @@ npm run deploy:arbitrum
 
 ### Contract Verification
 ```bash
-# Verify on Sepolia
+# Verify on Sepolia (✅ Working)
 npm run verify:sepolia
 
 # Verify on Arbitrum Sepolia
 npm run verify:arbitrum
+```
+
+### Complete Deployment Workflow
+```bash
+# 1. Set up environment variables in .env
+PRIVATE_KEY=your_private_key
+DIGITAL_HOUSE_ADDRESS=your_multisig_address
+ETHERSCAN_API_KEY=your_etherscan_api_key
+
+# 2. Compile contracts
+npm run compile
+
+# 3. Deploy to Sepolia
+npm run deploy:sepolia
+
+# 4. Verify contract
+npm run verify:sepolia
 ```
 
 ### Ignition Modules
@@ -361,6 +378,54 @@ const factory = m.contract("DigitalHouseFactory", [
   realEstateAddress, // Default hotel address
   digitalHouseAddress // Digital House multisig
 ]);
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+### Common Issues and Solutions
+
+#### 1. **Deployment Issues**
+```bash
+# If deployment fails with "Nothing new to deploy"
+rm -rf ignition/deployments/chain-11155111
+npm run deploy:sepolia
+```
+
+#### 2. **Verification Issues**
+```bash
+# If verification fails with bytecode mismatch
+npx hardhat compile --force
+npm run verify:sepolia
+```
+
+#### 3. **API Key Issues**
+- Ensure your Etherscan API key is valid and has Sepolia permissions
+- Check that `ETHERSCAN_API_KEY` is set in your `.env` file
+- API keys may take a few minutes to activate
+
+#### 4. **Environment Variables**
+```bash
+# Required variables in .env
+PRIVATE_KEY=your_64_character_private_key
+DIGITAL_HOUSE_ADDRESS=your_multisig_address
+ETHERSCAN_API_KEY=your_etherscan_api_key
+FACTORY_ADDRESS=0xC3f3B1192E938A22a79149bbFc6d8218B1bC0117
+```
+
+#### 5. **Hardhat Configuration**
+Ensure your `hardhat.config.ts` has the correct Solidity settings:
+```typescript
+solidity: {
+  version: "0.8.20",
+  settings: {
+    optimizer: {
+      enabled: true,
+      runs: 200,
+    },
+  },
+},
 ```
 
 ---
@@ -396,12 +461,29 @@ uint256 constant CITIZEN_OWNER_PCT = 30;      // 30% → Original User
 
 ---
 
+## 🚀 Current Status
+
+### ✅ **Successfully Deployed & Verified**
+- **Contract**: DigitalHouseFactory
+- **Network**: Ethereum Sepolia
+- **Address**: `0xC3f3B1192E938A22a79149bbFc6d8218B1bC0117`
+- **Verification**: [View on Etherscan](https://sepolia.etherscan.io/address/0xC3f3B1192E938A22a79149bbFc6d8218B1bC0117#code)
+- **Status**: Ready for production use
+
+### 🔄 **Next Steps**
+1. Deploy to Arbitrum Sepolia
+2. Create frontend integration
+3. Test vault creation functionality
+4. Deploy to mainnet (when ready)
+
+---
+
 ## 📊 Contract Addresses
 
 ### 🔹 Ethereum Sepolia Testnet
 | Contract | Address | Status |
 |----------|---------|---------|
-| **DigitalHouseFactory** | `0x865A7B5aafaA1a2A0D65FE88A395dad0Df4a548C` | ✅ **Deployed** |
+| **DigitalHouseFactory** | `0xC3f3B1192E938A22a79149bbFc6d8218B1bC0117` | ✅ **Deployed & Verified** |
 | **DigitalHouseVault** | `Created dynamically` | 🔄 **On-demand** |
 | **PYUSD Token** | `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9` | ✅ Active |
 
@@ -442,6 +524,11 @@ contracts/
 │   ├── IDigitalHouseFactory.sol
 │   └── IDigitalHouseVault.sol
 └── mockerc20.sol             # Testing mock
+
+docs/
+└── diagrams/                  # System diagrams
+    ├── digital-house-flow.mmd # Main flow diagram
+    └── sequenceDiagram.mmd    # Sequence diagram
 
 ignition/modules/             # Deployment modules
 ├── DigitalHouseFactory.ts   
