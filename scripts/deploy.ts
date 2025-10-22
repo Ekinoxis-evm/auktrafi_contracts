@@ -1,55 +1,52 @@
-import { ethers } from "hardhat";
+import { writeFileSync, mkdirSync, existsSync } from "fs";
+import path from "path";
+import hre from "hardhat";
 
 async function main() {
-  console.log("🏗️  Deploying DigitalHouse contracts to Sepolia...");
+  console.log("🧩 Compilando contratos...");
+  await hre.run("compile");
 
-  // Contract addresses
-  const PYUSD_SEPOLIA = "0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9";
-  const DIGITAL_HOUSE_MULTISIG = "0x854b298d922fDa553885EdeD14a84eb088355822";
+  const [deployer] = await hre.ethers.getSigners();
+  console.log("🚀 Desplegando con:", deployer.address);
+  console.log("💰 Balance:", hre.ethers.formatEther(await hre.ethers.provider.getBalance(deployer.address)), "ETH");
 
-  // Get deployer
-  const [deployer] = await ethers.getSigners();
-  console.log("📱 Deploying with account:", deployer.address);
-  console.log("💰 Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "ETH");
+  // Contract addresses - these should be set in environment variables
+  const PYUSD_ADDRESS = process.env.PYUSD_SEPOLIA || "0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9";
+  const DIGITAL_HOUSE_ADDRESS = process.env.DIGITAL_HOUSE_ADDRESS || "0x854b298d922fDa553885EdeD14a84eb088355822";
 
-  // Deploy DigitalHouseFactory
-  console.log("\n🏭 Deploying DigitalHouseFactory...");
-  const DigitalHouseFactory = await ethers.getContractFactory("DigitalHouseFactory");
-  const factory = await DigitalHouseFactory.deploy(
-    PYUSD_SEPOLIA,
-    DIGITAL_HOUSE_MULTISIG
-  );
+  console.log("🏭 Desplegando DigitalHouseFactory...");
+  const Factory = await hre.ethers.getContractFactory("DigitalHouseFactory");
+  const contract = await Factory.deploy(PYUSD_ADDRESS, DIGITAL_HOUSE_ADDRESS);
+  await contract.waitForDeployment();
 
-  await factory.waitForDeployment();
-  const factoryAddress = await factory.getAddress();
+  const address = await contract.getAddress();
+  console.log(`✅ Contrato desplegado en: ${address}`);
 
-  console.log("✅ DigitalHouseFactory deployed to:", factoryAddress);
+  const abi = Factory.interface.formatJson();
+  const output = {
+    contractName: "DigitalHouseFactory",
+    address,
+    abi: JSON.parse(abi)
+  };
+
+  const dir = path.resolve(__dirname, "../shared");
+  if (!existsSync(dir)) mkdirSync(dir);
+  const filePath = path.join(dir, "DigitalHouseFactory.json");
+
+  writeFileSync(filePath, JSON.stringify(output, null, 2));
+  console.log("📦 ABI y dirección exportados en:", filePath);
 
   // Log deployment details
   console.log("\n📋 Deployment Summary:");
   console.log("=".repeat(50));
-  console.log("🏭 DigitalHouseFactory:", factoryAddress);
-  console.log("💴 PYUSD Token:", PYUSD_SEPOLIA);
-  console.log("🏛️  Digital House Multisig:", DIGITAL_HOUSE_MULTISIG);
+  console.log("🏭 DigitalHouseFactory:", address);
+  console.log("💴 PYUSD Token:", PYUSD_ADDRESS);
+  console.log("🏛️  Digital House Multisig:", DIGITAL_HOUSE_ADDRESS);
   console.log("📱 Deployer:", deployer.address);
-  console.log("🌐 Network: Sepolia");
+  console.log("🌐 Network:", hre.network.name);
 
-  // Save deployment addresses
-  const deploymentInfo = {
-    network: "sepolia",
-    factory: factoryAddress,
-    pyusd: PYUSD_SEPOLIA,
-    digitalHouse: DIGITAL_HOUSE_MULTISIG,
-    deployer: deployer.address,
-    timestamp: new Date().toISOString(),
-    blockNumber: await ethers.provider.getBlockNumber()
-  };
-
-  console.log("\n💾 Deployment info saved:");
-  console.log(JSON.stringify(deploymentInfo, null, 2));
-
-  console.log("\n🔍 Verify contract with:");
-  console.log(`npx hardhat verify --network sepolia ${factoryAddress} "${PYUSD_SEPOLIA}" "${DIGITAL_HOUSE_MULTISIG}"`);
+  console.log("\n🔍 Verificar contrato con:");
+  console.log(`npx hardhat verify --network ${hre.network.name} ${address} "${PYUSD_ADDRESS}" "${DIGITAL_HOUSE_ADDRESS}"`);
 }
 
 main()

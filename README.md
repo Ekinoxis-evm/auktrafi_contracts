@@ -264,32 +264,173 @@ EOF
 
 ### 3. Compilation
 ```bash
-npm run compile
+npx hardhat compile
+```
+
+## ⚡ Quick Commands
+
+### Essential Commands
+```bash
+# Compile contracts
+npx hardhat compile
+
+# Run all tests
+npx hardhat test
+
+# Deploy to local network
+npx hardhat node
+# In another terminal:
+npx hardhat run scripts/deploy.ts --network localhost
+
+# Deploy to testnet
+npx hardhat run scripts/deploy.ts --network sepolia
+
+# Verify contract
+npx hardhat verify --network sepolia <CONTRACT_ADDRESS> <PYUSD_ADDRESS> <DIGITAL_HOUSE_ADDRESS>
+```
+
+### Development Commands
+```bash
+# Start local node
+npx hardhat node
+
+# Interactive console
+npx hardhat console --network localhost
+
+# Run specific test
+npx hardhat test test/unit/DigitalHouseFactory.test.ts
+
+# Run with coverage
+npx hardhat coverage
+
+# Clean artifacts
+npx hardhat clean
 ```
 
 ---
 
-## 🧪 Testing
+## 🧪 Testing & Deployment
 
-Digital House implements a comprehensive testing suite following Hardhat 3 best practices.
+Complete guide for testing and deploying Digital House smart contracts using Hardhat commands.
 
-### Run Tests
+### 🚀 Quick Start Commands
+
 ```bash
-# Complete test suite
-npm test
+# 1. Compile contracts
+npx hardhat compile
 
-# Tests with coverage report
-npm run test:coverage
+# 2. Run all tests
+npx hardhat test
 
-# Tests with gas metrics
-npm run test:gas
+# 3. Deploy to local network
+npx hardhat node
+# In another terminal:
+npx hardhat run scripts/deploy.ts --network localhost
 
-# Specific tests
-npx hardhat test test/unit/DigitalHouseFactory.test.ts
-npx hardhat test test/unit/DigitalHouse.test.ts
+# 4. Deploy to testnet
+npx hardhat run scripts/deploy.ts --network sepolia
+
+# 5. Verify contract
+npx hardhat verify --network sepolia <CONTRACT_ADDRESS> <PYUSD_ADDRESS> <DIGITAL_HOUSE_ADDRESS>
 ```
 
-### Test Structure
+### 📋 Complete Workflow
+
+#### 1. **Compilation**
+```bash
+# Compile contracts
+npx hardhat compile
+
+# Force recompilation (if needed)
+npx hardhat compile --force
+
+# Clean and compile
+npx hardhat clean
+npx hardhat compile
+```
+
+#### 2. **Testing**
+```bash
+# Run all tests
+npx hardhat test
+
+# Run specific test file
+npx hardhat test test/unit/DigitalHouseFactory.test.ts
+npx hardhat test test/unit/DigitalHouse.test.ts
+
+# Run tests with verbose output
+npx hardhat test --verbose
+
+# Run tests with gas reporting
+REPORT_GAS=true npx hardhat test
+
+# Run tests with coverage
+npx hardhat coverage
+```
+
+#### 3. **Local Development**
+```bash
+# Start local Hardhat node
+npx hardhat node
+
+# Deploy to local network (in another terminal)
+npx hardhat run scripts/deploy.ts --network localhost
+
+# Interactive console for testing
+npx hardhat console --network localhost
+```
+
+#### 4. **Testnet Deployment**
+```bash
+# Deploy to Sepolia
+npx hardhat run scripts/deploy.ts --network sepolia
+
+# Deploy to Arbitrum Sepolia
+npx hardhat run scripts/deploy.ts --network arbitrumSepolia
+```
+
+#### 5. **Contract Verification**
+```bash
+# Verify on Sepolia
+npx hardhat verify --network sepolia <CONTRACT_ADDRESS> <PYUSD_ADDRESS> <DIGITAL_HOUSE_ADDRESS>
+
+# Verify on Arbitrum Sepolia
+npx hardhat verify --network arbitrumSepolia <CONTRACT_ADDRESS> <PYUSD_ADDRESS> <DIGITAL_HOUSE_ADDRESS>
+```
+
+### 📦 Automatic ABI Export
+
+The deployment script automatically exports contract information to `/shared/DigitalHouseFactory.json`:
+
+```bash
+# Deploy and export ABI + address
+npx hardhat run scripts/deploy.ts --network sepolia
+```
+
+**Output file structure:**
+```json
+{
+  "contractName": "DigitalHouseFactory",
+  "address": "0xDeployedAddress",
+  "abi": [ ... ]
+}
+```
+
+### 🔧 Hardhat Commands Reference
+
+| Command | Description | Usage |
+|---------|-------------|-------|
+| `npx hardhat compile` | Compile contracts | Before deployment |
+| `npx hardhat test` | Run all tests | Basic testing |
+| `npx hardhat test --verbose` | Run tests with details | Debugging |
+| `npx hardhat coverage` | Run with coverage report | Code coverage |
+| `npx hardhat node` | Start local network | Development |
+| `npx hardhat console` | Interactive console | Manual testing |
+| `npx hardhat run scripts/deploy.ts` | Deploy contracts | Deployment |
+| `npx hardhat verify` | Verify contracts | Contract verification |
+| `npx hardhat clean` | Clean artifacts | Reset state |
+
+### 🏗️ Test Structure
 ```
 test/
 ├── unit/
@@ -298,60 +439,90 @@ test/
 └── integration/                     # Integration tests (coming soon)
 ```
 
+### 📊 Test Coverage
+
+The test suite covers:
+- ✅ **Factory Functions**: Vault creation, management, queries
+- ✅ **Vault Lifecycle**: Reservation, auction, cession, check-in/out
+- ✅ **Payment Flows**: PYUSD transfers, distribution logic
+- ✅ **Access Control**: Owner permissions, function restrictions
+- ✅ **Edge Cases**: Invalid inputs, state transitions, error handling
+- ✅ **Gas Optimization**: Function call costs, deployment costs
+
+### 🔍 Debugging & Advanced Testing
+
+```bash
+# Run specific test with debugging
+npx hardhat test test/unit/DigitalHouseFactory.test.ts --verbose
+
+# Run with gas reporting
+REPORT_GAS=true npx hardhat test
+
+# Run with network logging
+DEBUG=hardhat:network npx hardhat test
+
+# Run specific test pattern
+npx hardhat test --grep "should create vault"
+```
+
 ---
 
-## 🌐 Deployment
-
-Digital House uses **Hardhat Ignition** for deterministic and upgradeable deployments.
-
-### 🏗️ Deployment Architecture
+## 🌐 Deployment Architecture
 
 **Two-Tier Contract System:**
 
 1. **📦 DigitalHouseFactory** (Deployed once per network)
    - ✅ **Status**: Deployed on Sepolia at `0x865A7B5aafaA1a2A0D65FE88A395dad0Df4a548C`
    - **Purpose**: Creates and manages individual property vaults
-   - **Deployment**: Manual deployment via Hardhat Ignition
+   - **Deployment**: Via `npx hardhat run scripts/deploy.ts`
 
 2. **🏠 DigitalHouseVault** (Created dynamically)
    - ✅ **Status**: Created automatically when needed
    - **Purpose**: Manages individual property reservations and auctions
    - **Creation**: Automatic via `Factory.createVault()` calls
 
-### Supported Networks
+### 🌐 Supported Networks
 - **Sepolia Ethereum** (Testnet)
 - **Arbitrum Sepolia** (L2 Testnet)
+- **Localhost** (Development)
 
-### Deployment Commands
 
-#### Local Network (Development)
+### 📦 Automatic ABI Export
+
+The deployment script automatically exports contract information:
+
 ```bash
-# Start local node
-npm run node
-
-# Deploy in new terminal
-npm run deploy:local
+# Deploy and export ABI + address
+npx hardhat run scripts/deploy.ts --network sepolia
 ```
 
-#### Testnets
-```bash
-# Sepolia Ethereum
-npm run deploy:sepolia
-
-# Arbitrum Sepolia  
-npm run deploy:arbitrum
+**Output**: Creates `/shared/DigitalHouseFactory.json`:
+```json
+{
+  "contractName": "DigitalHouseFactory",
+  "address": "0xDeployedAddress",
+  "abi": [ ... ]
+}
 ```
 
-### Contract Verification
+**Features**:
+- ✅ **Automatic compilation** before deployment
+- ✅ **ABI extraction** from contract factory
+- ✅ **Address export** in clean JSON format
+- ✅ **Directory creation** (`/shared/`) if it doesn't exist
+- ✅ **Console logging** with clear deployment steps
+- ✅ **Environment variable support** for addresses
+
+### 🔍 Contract Verification
 ```bash
-# Verify on Sepolia (✅ Working)
-npm run verify:sepolia
+# Verify on Sepolia
+npx hardhat verify --network sepolia <CONTRACT_ADDRESS> <PYUSD_ADDRESS> <DIGITAL_HOUSE_ADDRESS>
 
 # Verify on Arbitrum Sepolia
-npm run verify:arbitrum
+npx hardhat verify --network arbitrumSepolia <CONTRACT_ADDRESS> <PYUSD_ADDRESS> <DIGITAL_HOUSE_ADDRESS>
 ```
 
-### Complete Deployment Workflow
+### 🚀 Complete Deployment Workflow
 ```bash
 # 1. Set up environment variables in .env
 PRIVATE_KEY=your_private_key
@@ -359,25 +530,13 @@ DIGITAL_HOUSE_ADDRESS=your_multisig_address
 ETHERSCAN_API_KEY=your_etherscan_api_key
 
 # 2. Compile contracts
-npm run compile
+npx hardhat compile
 
 # 3. Deploy to Sepolia
-npm run deploy:sepolia
+npx hardhat run scripts/deploy.ts --network sepolia
 
 # 4. Verify contract
-npm run verify:sepolia
-```
-
-### Ignition Modules
-Deployments use Ignition modules for advanced configuration:
-
-```typescript
-// ignition/modules/DigitalHouseFactory.ts
-const factory = m.contract("DigitalHouseFactory", [
-  pyusdToken,        // PYUSD address per network
-  realEstateAddress, // Default hotel address
-  digitalHouseAddress // Digital House multisig
-]);
+npx hardhat verify --network sepolia <CONTRACT_ADDRESS> <PYUSD_ADDRESS> <DIGITAL_HOUSE_ADDRESS>
 ```
 
 ---
