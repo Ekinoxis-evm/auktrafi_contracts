@@ -68,51 +68,7 @@ Individual contract that manages the complete reservation cycle for a specific p
 
 ### 📊 System Flow Diagram
 
-```mermaid
-flowchart TD
-    A[🏨 Hotel creates Vault via Factory] --> B{Vault State: FREE}
-    
-    B --> C[👤 User A creates reservation<br/>Stake: 1,000 PYUSD]
-    C --> D{Vault State: AUCTION}
-    
-    D --> E[⏰ Auction Period<br/>Until 24hrs before check-in]
-    
-    E --> F{Any bids?}
-    F -->|No| M[⏰ Check-in Time]
-    F -->|Yes| G[👥 User B places bid<br/>Bid: 1,500 PYUSD]
-    
-    G --> H{Does User A cede?}
-    
-    H -->|Doesn't cede| M
-    H -->|Cedes| I[💰 Citizen Value Distribution]
-    
-    I --> J[👤 A receives: 1,150 PYUSD<br/>🏨 Hotel: 250 PYUSD<br/>🏠 Digital House: 100 PYUSD]
-    J --> K[🔄 Reservation transferred to User B<br/>New stake: 1,000 PYUSD]
-    K --> M
-    
-    M --> N{Is correct booker?}
-    N -->|No| O[❌ Check-in failed]
-    N -->|Yes| P[✅ Check-in successful<br/>Access code generated]
-    
-    P --> Q[🏨 Payment to Hotel: 950 PYUSD<br/>🏠 Digital House: 50 PYUSD]
-    Q --> R{Vault State: SETTLED}
-    
-    R --> S[⏰ Check-out Time]
-    S --> T[👤 User checks out]
-    T --> U{Vault State: FREE}
-    U --> B
-    
-    %% Styling
-    classDef userAction fill:#e1f5fe
-    classDef vaultState fill:#f3e5f5
-    classDef payment fill:#e8f5e8
-    classDef hotel fill:#fff3e0
-    
-    class C,G,T userAction
-    class B,D,R,U vaultState  
-    class I,J,Q payment
-    class A hotel
-```
+https://github.com/Ekinoxis-evm/digitalhouse_contracts/blob/main/digital-house-flow.mmd
 
 ### 🔄 Sequence Diagram: Complete Process with Cession
 
