@@ -32,8 +32,8 @@ Digital House is a blockchain platform that enables hotel property bookings thro
 
 ## 🏗️ Contract Architecture
 
-### DigitalHouseFactory.sol
-Factory contract for creating and managing property vaults in a scalable way.
+### 📦 DigitalHouseFactory.sol
+**Main Factory Contract** - Deployed once per network. Creates and manages individual property vaults.
 
 ```solidity
 function createVault(
@@ -51,8 +51,8 @@ function createVault(
 - `getAllVaultIds()` - List all vaults
 - `getOwnerVaults()` - Vaults by owner
 
-### DigitalHouseVault.sol
-Individual contract that manages the complete reservation cycle for a specific property.
+### 🏠 DigitalHouseVault.sol
+**Individual Vault Contracts** - Created dynamically by the Factory for each property. Each vault manages one specific property's complete reservation cycle.
 
 **Vault States:**
 - `FREE` - Available for new reservation
@@ -304,13 +304,27 @@ test/
 
 Digital House uses **Hardhat Ignition** for deterministic and upgradeable deployments.
 
+### 🏗️ Deployment Architecture
+
+**Two-Tier Contract System:**
+
+1. **📦 DigitalHouseFactory** (Deployed once per network)
+   - ✅ **Status**: Deployed on Sepolia at `0x865A7B5aafaA1a2A0D65FE88A395dad0Df4a548C`
+   - **Purpose**: Creates and manages individual property vaults
+   - **Deployment**: Manual deployment via Hardhat Ignition
+
+2. **🏠 DigitalHouseVault** (Created dynamically)
+   - ✅ **Status**: Created automatically when needed
+   - **Purpose**: Manages individual property reservations and auctions
+   - **Creation**: Automatic via `Factory.createVault()` calls
+
 ### Supported Networks
 - **Sepolia Ethereum** (Testnet)
 - **Arbitrum Sepolia** (L2 Testnet)
 
 ### Deployment Commands
 
-#### Local Network (Development)
+#### Local Network (Development)npm run node
 ```bash
 # Start local node
 npm run node
@@ -387,14 +401,18 @@ uint256 constant CITIZEN_OWNER_PCT = 30;      // 30% → Original User
 ### 🔹 Ethereum Sepolia Testnet
 | Contract | Address | Status |
 |----------|---------|---------|
-| DigitalHouseFactory | `TBD` | 🔄 Pending |
-| PYUSD Token | `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9` | ✅ Active |
+| **DigitalHouseFactory** | `0x865A7B5aafaA1a2A0D65FE88A395dad0Df4a548C` | ✅ **Deployed** |
+| **DigitalHouseVault** | `Created dynamically` | 🔄 **On-demand** |
+| **PYUSD Token** | `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9` | ✅ Active |
 
 ### 🔸 Arbitrum Sepolia Testnet
 | Contract | Address | Status |
 |----------|---------|---------|
-| DigitalHouseFactory | `TBD` | 🔄 Pending |
-| PYUSD Token | `0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1` | ✅ Active |
+| **DigitalHouseFactory** | `TBD` | 🔄 Pending |
+| **DigitalHouseVault** | `Created dynamically` | 🔄 **On-demand** |
+| **PYUSD Token** | `0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1` | ✅ Active |
+
+> **📝 Note**: `DigitalHouseVault` contracts are created automatically when hotels call `Factory.createVault()`. Each property gets its own vault contract.
 
 ---
 

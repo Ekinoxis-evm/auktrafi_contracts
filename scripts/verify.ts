@@ -1,7 +1,13 @@
 import { run } from "hardhat";
 import * as dotenv from "dotenv";
 
+// Load environment variables
 dotenv.config();
+
+// Verify environment variables are loaded
+console.log("Environment check:");
+console.log("- ETHERSCAN_API_KEY:", process.env.ETHERSCAN_API_KEY ? "SET" : "NOT SET");
+console.log("- FACTORY_ADDRESS:", process.env.FACTORY_ADDRESS || "NOT SET");
 
 /**
  * Contract verification script for block explorers

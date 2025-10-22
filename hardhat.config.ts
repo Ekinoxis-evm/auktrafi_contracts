@@ -1,5 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import hardhatVerify from "@nomicfoundation/hardhat-verify";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -12,44 +13,20 @@ const config: HardhatUserConfig = {
         enabled: true,
         runs: 200,
       },
-      // viaIR: true, // Disabled for better debugging - enable for production
     },
   },
   networks: {
-    hardhat: {
-      chainId: 1337,
-      // Fork from mainnet for more realistic testing (optional)
-      // forking: {
-      //   url: process.env.MAINNET_RPC_URL || "",
-      //   blockNumber: 18500000,
-      // },
-    },
-    localhost: {
-      url: "http://127.0.0.1:8545",
-      chainId: 1337,
-    },
-    // Ethereum Testnets
+    hardhat: {},
     sepolia: {
       url: process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY.startsWith('0x') ? process.env.PRIVATE_KEY : `0x${process.env.PRIVATE_KEY}`] : [],
-      chainId: 11155111,
-      gasPrice: "auto",
-      gasMultiplier: 1.2,
-    },
-    // Arbitrum Testnets
-    arbitrumSepolia: {
-      url: process.env.ARBITRUM_SEPOLIA_RPC_URL || "https://sepolia-rollup.arbitrum.io/rpc",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY.startsWith('0x') ? process.env.PRIVATE_KEY : `0x${process.env.PRIVATE_KEY}`] : [],
-      chainId: 421614,
-      gasPrice: "auto",
-      gasMultiplier: 1.1,
+      accounts: [process.env.PRIVATE_KEY || ""],
     },
   },
+  sourcify: {
+    enabled: true
+  },
   etherscan: {
-    apiKey: {
-      sepolia: process.env.ETHERSCAN_API_KEY || "",
-      arbitrumSepolia: process.env.ARBISCAN_API_KEY || "",
-    },
+    apiKey: process.env.ETHERSCAN_API_KEY || "",
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
