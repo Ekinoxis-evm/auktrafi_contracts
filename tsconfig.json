@@ -1,0 +1,32 @@
+// tsconfig.json for Hardhat project
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "rootDir": "./",
+    "typeRoots": ["./node_modules/@types", "./typechain-types"],
+  "types": ["node", "mocha", "chai"]
+  },
+  "include": [
+    "./scripts",
+    "./test",
+    "./ignition",
+    "./typechain-types"
+  ],
+  "exclude": [
+    "node_modules",
+    "artifacts",
+    "cache",
+    "dist"
+  ],
+  "files": [
+    "./hardhat.config.ts"
+  ]
+}
