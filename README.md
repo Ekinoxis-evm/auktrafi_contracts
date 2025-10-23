@@ -259,8 +259,7 @@ EOF
 |----------|-------------|----------|
 | `PRIVATE_KEY` | Wallet private key for deployment | ✅ |
 | `DIGITAL_HOUSE_ADDRESS` | Digital House multisig address | ✅ |
-| `ETHERSCAN_API_KEY` | API key for contract verification on Sepolia | ⚠️ Only for verification |
-| `ARBISCAN_API_KEY` | API key for contract verification on Arbitrum | ⚠️ Only for verification |
+| `ETHERSCAN_API_KEY` | API key for contract verification (v2 - works for all networks) | ⚠️ Only for verification |
 
 ### 3. Compilation
 ```bash
@@ -568,6 +567,7 @@ npm run verify:sepolia
 #### 3. **API Key Issues**
 - Ensure your Etherscan API key is valid and has Sepolia permissions
 - Check that `ETHERSCAN_API_KEY` is set in your `.env` file
+- **Note**: We now use Etherscan v2 API - only one API key needed for all networks
 - API keys may take a few minutes to activate
 
 #### 4. **Environment Variables**
@@ -575,7 +575,7 @@ npm run verify:sepolia
 # Required variables in .env
 PRIVATE_KEY=your_64_character_private_key
 DIGITAL_HOUSE_ADDRESS=your_multisig_address
-ETHERSCAN_API_KEY=your_etherscan_api_key
+ETHERSCAN_API_KEY=your_etherscan_api_key  # v2 API - works for all networks
 FACTORY_ADDRESS=0xC3f3B1192E938A22a79149bbFc6d8218B1bC0117
 ```
 
@@ -592,6 +592,30 @@ solidity: {
   },
 },
 ```
+
+#### 6. **Etherscan v2 API Configuration**
+We now use Etherscan v2 API which works with all networks using a single API key:
+```typescript
+etherscan: {
+  apiKey: process.env.ETHERSCAN_API_KEY || "",
+  customChains: [
+    {
+      network: "arbitrumSepolia",
+      chainId: 421614,
+      urls: {
+        apiURL: "https://api-sepolia.arbiscan.io/api",
+        browserURL: "https://sepolia.arbiscan.io"
+      }
+    }
+  ]
+}
+```
+
+**Benefits of v2 API:**
+- ✅ **Single API key** for all networks
+- ✅ **Simplified configuration** 
+- ✅ **Better support** for custom chains
+- ✅ **Future-proof** - v1 deprecated by May 2025
 
 ---
 
@@ -655,13 +679,18 @@ uint256 constant CITIZEN_OWNER_PCT = 30;      // 30% → Original User
 ### 🔸 Arbitrum Sepolia Testnet
 | Contract | Address | Status |
 |----------|---------|---------|
-| **DigitalHouseFactory** | `0xE30eBc03Cdf4c44b1bcD2Ca9aEf8bea27C6D082d` | ✅ **Deployed |
+| **DigitalHouseFactory** | `0xE30eBc03Cdf4c44b1bcD2Ca9aEf8bea27C6D082d` | ✅ **Deployed & Verified** |
 | **DigitalHouseVault** | `Created dynamically` | 🔄 **On-demand** |
 | **PYUSD Token** | `0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1` | ✅ Active |
 
 **Deploy to Arbitrum Sepolia:**
 ```bash
 npx hardhat run scripts/deploy.ts --network arbitrumSepolia
+```
+
+**Verify on Arbitrum Sepolia:**
+```bash
+npx hardhat verify --network arbitrumSepolia <CONTRACT_ADDRESS> <PYUSD_ADDRESS> <DIGITAL_HOUSE_ADDRESS>
 ```
 
 > **📝 Note**: `DigitalHouseVault` contracts are created automatically when hotels call `Factory.createVault()`. Each property gets its own vault contract.
