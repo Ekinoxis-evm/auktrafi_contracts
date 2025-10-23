@@ -10,8 +10,19 @@ async function main() {
   console.log("🚀 Desplegando con:", deployer.address);
   console.log("💰 Balance:", hre.ethers.formatEther(await hre.ethers.provider.getBalance(deployer.address)), "ETH");
 
-  // Contract addresses - these should be set in environment variables
-  const PYUSD_ADDRESS = process.env.PYUSD_SEPOLIA || "0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9";
+  // Get network-specific addresses
+  const networkName = hre.network.name;
+  let PYUSD_ADDRESS: string;
+  
+  if (networkName === "sepolia") {
+    PYUSD_ADDRESS = process.env.PYUSD_SEPOLIA || "0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9";
+  } else if (networkName === "arbitrumSepolia") {
+    PYUSD_ADDRESS = process.env.PYUSD_ARBITRUM_SEPOLIA || "0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1";
+  } else {
+    // For localhost or other networks, use Sepolia PYUSD as default
+    PYUSD_ADDRESS = process.env.PYUSD_SEPOLIA || "0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9";
+  }
+  
   const DIGITAL_HOUSE_ADDRESS = process.env.DIGITAL_HOUSE_ADDRESS || "0x854b298d922fDa553885EdeD14a84eb088355822";
 
   console.log("🏭 Desplegando DigitalHouseFactory...");
@@ -29,7 +40,7 @@ async function main() {
     abi: JSON.parse(abi)
   };
 
-  const dir = path.resolve(__dirname, "../shared");
+  const dir = path.resolve(__dirname, "../abi");
   if (!existsSync(dir)) mkdirSync(dir);
   const filePath = path.join(dir, "DigitalHouseFactory.json");
 

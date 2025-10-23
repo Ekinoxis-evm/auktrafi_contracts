@@ -284,9 +284,11 @@ npx hardhat run scripts/deploy.ts --network localhost
 
 # Deploy to testnet
 npx hardhat run scripts/deploy.ts --network sepolia
+npx hardhat run scripts/deploy.ts --network arbitrumSepolia
 
 # Verify contract
 npx hardhat verify --network sepolia <CONTRACT_ADDRESS> <PYUSD_ADDRESS> <DIGITAL_HOUSE_ADDRESS>
+npx hardhat verify --network arbitrumSepolia <CONTRACT_ADDRESS> <PYUSD_ADDRESS> <DIGITAL_HOUSE_ADDRESS>
 ```
 
 ### Development Commands
@@ -388,6 +390,10 @@ npx hardhat run scripts/deploy.ts --network sepolia
 # Deploy to Arbitrum Sepolia
 npx hardhat run scripts/deploy.ts --network arbitrumSepolia
 ```
+
+**Network-specific PYUSD addresses are automatically selected:**
+- **Sepolia**: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
+- **Arbitrum Sepolia**: `0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1`
 
 #### 5. **Contract Verification**
 ```bash
@@ -642,16 +648,21 @@ uint256 constant CITIZEN_OWNER_PCT = 30;      // 30% → Original User
 ### 🔹 Ethereum Sepolia Testnet
 | Contract | Address | Status |
 |----------|---------|---------|
-| **DigitalHouseFactory** | `0xC3f3B1192E938A22a79149bbFc6d8218B1bC0117` | ✅ **Deployed & Verified** |
+| **DigitalHouseFactory** | `0x38e797F2f6b7ae1387e5eC7288Ec216Caf7e0109` | ✅ **Deployed & Verified** |
 | **DigitalHouseVault** | `Created dynamically` | 🔄 **On-demand** |
 | **PYUSD Token** | `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9` | ✅ Active |
 
 ### 🔸 Arbitrum Sepolia Testnet
 | Contract | Address | Status |
 |----------|---------|---------|
-| **DigitalHouseFactory** | `TBD` | 🔄 Pending |
+| **DigitalHouseFactory** | `0xE30eBc03Cdf4c44b1bcD2Ca9aEf8bea27C6D082d` | ✅ **Deployed |
 | **DigitalHouseVault** | `Created dynamically` | 🔄 **On-demand** |
 | **PYUSD Token** | `0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1` | ✅ Active |
+
+**Deploy to Arbitrum Sepolia:**
+```bash
+npx hardhat run scripts/deploy.ts --network arbitrumSepolia
+```
 
 > **📝 Note**: `DigitalHouseVault` contracts are created automatically when hotels call `Factory.createVault()`. Each property gets its own vault contract.
 
