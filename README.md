@@ -1,4 +1,4 @@
-# Digital House - Decentralized Property Booking Platform 🏨
+# Auktrafi - Decentralized Property Booking Platform 🏨
 
 A blockchain-based booking platform that enables property owners to tokenize their real estate and manage night-by-night reservations with competitive auction-based pricing.
 
@@ -15,7 +15,7 @@ Traditional booking platforms have several issues:
 
 ## 💡 Our Solution
 
-Digital House uses blockchain technology to create a **decentralized, transparent, and fair booking system**:
+Auktrafi uses blockchain technology to create a **decentralized, transparent, and fair booking system**:
 
 ✅ **Zero Platform Fees** - Only 5% goes to platform maintenance, 95% to property owners  
 ✅ **Auction-Based Pricing** - Market determines fair prices through competitive bidding  
@@ -286,14 +286,14 @@ npx hardhat test
 ### Base Price (No Auction)
 When a guest books at base price:
 - **95%** → Property owner (parent vault treasury)
-- **5%** → Platform (Digital House)
+- **5%** → Platform (Auktrafi)
 
 ### With Auction (Competitive Bidding)
 When final price exceeds base price, the **additional value** is split:
 - **40%** → Current booker (who checks in)
 - **30%** → Last booker (who ceded the reservation)
 - **20%** → Property owner
-- **10%** → Platform
+- **10%** → Platform (Auktrafi)
 
 **Example:**
 ```

@@ -1,6 +1,6 @@
-# 📊 Digital House - System Architecture
+# 📊 Auktrafi - System Architecture
 
-This document contains the system diagrams and contract flow for the Digital House night-by-night booking platform.
+This document contains the system diagrams and contract flow for the Auktrafi night-by-night booking platform.
 
 ---
 
@@ -71,7 +71,7 @@ sequenceDiagram
     participant A as 👤 User A
     participant B as 👥 User B
     participant P as 💰 PYUSD Token
-    participant DH as 🏢 Digital House
+    participant DH as 🏢 Auktrafi
 
     Note over H,DH: 1. Parent Vault Creation
     H->>F: createVault("HOTEL-001", 100 PYUSD, "HOTEL123")
@@ -195,11 +195,11 @@ GitHub automatically renders Mermaid diagrams in markdown files.
 
 ### Base Price Distribution (95/5 split)
 - **95%** → Property Owner (Hotel)
-- **5%** → Platform (Digital House)
+- **5%** → Platform (Auktrafi)
 
 ### Additional Value Distribution (Citizen Value)
 When final price > base price:
 - **40%** → Current booker (who checked in)
 - **30%** → Previous booker (who ceded)
 - **20%** → Property Owner (Hotel)
-- **10%** → Platform (Digital House)
+- **10%** → Platform (Auktrafi)

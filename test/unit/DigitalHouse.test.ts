@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("🏠 Digital House end-to-end", function () {
+describe("🏠 Auktrafi end-to-end", function () {
   const PYUSD_DECIMALS = 6;
   const FLOOR_PRICE = ethers.parseUnits("1000", PYUSD_DECIMALS);
 

@@ -9,7 +9,7 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
  * 
  * Environment Variables Required:
  * - PYUSD_SEPOLIA or PYUSD_ARBITRUM_SEPOLIA (depending on network)
- * - DIGITAL_HOUSE_ADDRESS (Digital House multisig address)
+ * - DIGITAL_HOUSE_ADDRESS (Auktrafi multisig address)
  * 
  * Note: This module deploys both the Vault implementation and Factory
  */
@@ -41,7 +41,7 @@ const DigitalHouseFactoryModule = buildModule("DigitalHouseFactoryModule", (m) =
   }
   
   if (!digitalHouseAddress) {
-    throw new Error("Digital House address is required (DIGITAL_HOUSE_ADDRESS env var)");
+    throw new Error("Auktrafi address is required (DIGITAL_HOUSE_ADDRESS env var)");
   }
 
   // Step 1: Deploy Vault Implementation

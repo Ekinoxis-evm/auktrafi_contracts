@@ -60,7 +60,7 @@ contract DigitalHouseVault is ReentrancyGuardUpgradeable, OwnableUpgradeable {
     uint256 constant ADDITIONAL_CURRENT_BOOKER_PCT = 40; // Para quien hace check-in
     uint256 constant ADDITIONAL_LAST_BOOKER_PCT = 30;    // Para quien cedió la reserva
     uint256 constant ADDITIONAL_REALESTATE_PCT = 20;     // Para el dueño del vault
-    uint256 constant ADDITIONAL_PLATFORM_PCT = 10;      // Para Digital House
+    uint256 constant ADDITIONAL_PLATFORM_PCT = 10;      // Para Auktrafi
     
     // Estructura para códigos de acceso
     struct AccessCode {
@@ -79,7 +79,7 @@ contract DigitalHouseVault is ReentrancyGuardUpgradeable, OwnableUpgradeable {
     
     // Direcciones de recepción
     address public realEstateAddress; // Parent vault address (receives payments) or address(0) for parent vaults
-    address public digitalHouseAddress; // Digital House multisig
+    address public digitalHouseAddress; // Auktrafi multisig
     address public factoryAddress; // Factory contract for state synchronization
     
     // Modifier para sincronizar estado con Factory
@@ -317,7 +317,7 @@ contract DigitalHouseVault is ReentrancyGuardUpgradeable, OwnableUpgradeable {
                 // Direct transfers for platform, bookers
                 require(
                     pyusdToken.transfer(digitalHouseAddress, baseDigitalHouseAmount + additionalPlatformAmount),
-                    "Digital house transfer failed"
+                    "Auktrafi transfer failed"
                 );
                 require(
                     pyusdToken.transfer(msg.sender, currentBookerAmount),
@@ -339,7 +339,7 @@ contract DigitalHouseVault is ReentrancyGuardUpgradeable, OwnableUpgradeable {
                 );
                 require(
                     pyusdToken.transfer(digitalHouseAddress, baseDigitalHouseAmount + additionalPlatformAmount),
-                    "Digital house transfer failed"
+                    "Auktrafi transfer failed"
                 );
                 require(
                     pyusdToken.transfer(msg.sender, currentBookerAmount),
@@ -371,7 +371,7 @@ contract DigitalHouseVault is ReentrancyGuardUpgradeable, OwnableUpgradeable {
                 
                 require(
                     pyusdToken.transfer(digitalHouseAddress, digitalHouseAmount),
-                    "Digital house transfer failed"
+                    "Auktrafi transfer failed"
                 );
             } else {
                 // Parent vault: Direct transfers to owner (for testing/legacy support)
@@ -382,7 +382,7 @@ contract DigitalHouseVault is ReentrancyGuardUpgradeable, OwnableUpgradeable {
                 );
                 require(
                     pyusdToken.transfer(digitalHouseAddress, digitalHouseAmount),
-                    "Digital house transfer failed"
+                    "Auktrafi transfer failed"
                 );
             }
         }

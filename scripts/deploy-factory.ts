@@ -18,7 +18,7 @@ async function main() {
   }
 
   console.log("🏦 PYUSD Token Address:", pyusdToken);
-  console.log("🏠 Digital House Address:", digitalHouseAddress);
+  console.log("🏠 Auktrafi Address:", digitalHouseAddress);
 
   // Deploy the contract
   console.log("⏳ Deploying DigitalHouseFactory...");
@@ -35,7 +35,7 @@ async function main() {
   console.log("├─ Network: Sepolia (11155111)");
   console.log("├─ Factory Address:", factoryAddress);
   console.log("├─ PYUSD Token:", pyusdToken);
-  console.log("├─ Digital House:", digitalHouseAddress);
+  console.log("├─ Auktrafi:", digitalHouseAddress);
   console.log("└─ Deployer:", deployer.address);
 
   console.log("\n🔍 Verification Command:");

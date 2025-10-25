@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 /**
  * @title IDigitalHouseVault
- * @dev Interface for Digital House Vault contract with auction system
+ * @dev Interface for Auktrafi Vault contract with auction system
  */
 interface IDigitalHouseVault {
 

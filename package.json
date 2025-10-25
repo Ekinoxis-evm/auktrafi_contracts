@@ -1,7 +1,7 @@
 {
   "name": "digital-house-contracts",
   "version": "1.0.0",
-  "description": "Smart contracts for Digital House - Decentralized Booking Platform with Auction System",
+  "description": "Smart contracts for Auktrafi - Decentralized Booking Platform with Auction System",
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
@@ -19,7 +19,7 @@
     "auction",
     "pyusd"
   ],
-  "author": "Digital House Team",
+  "author": "Auktrafi Team",
   "license": "MIT",
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
