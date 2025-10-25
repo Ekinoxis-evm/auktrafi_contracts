@@ -1,6 +1,6 @@
 {
   "contractName": "DigitalHouseFactory",
-  "address": "0xE30eBc03Cdf4c44b1bcD2Ca9aEf8bea27C6D082d",
+  "address": "0xC3f3B1192E938A22a79149bbFc6d8218B1bC0117",
   "abi": [
     {
       "type": "constructor",
@@ -34,6 +34,65 @@
         {
           "type": "address",
           "name": "account"
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "DateAvailabilityUpdated",
+      "inputs": [
+        {
+          "type": "string",
+          "name": "vaultId",
+          "indexed": true
+        },
+        {
+          "type": "uint256",
+          "name": "checkInDate",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "checkOutDate",
+          "indexed": false
+        },
+        {
+          "type": "bool",
+          "name": "isAvailable",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "DateVaultCreated",
+      "inputs": [
+        {
+          "type": "string",
+          "name": "parentVaultId",
+          "indexed": true
+        },
+        {
+          "type": "string",
+          "name": "subVaultId",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "subVaultAddress",
+          "indexed": true
+        },
+        {
+          "type": "uint256",
+          "name": "checkInDate",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "checkOutDate",
+          "indexed": false
         }
       ]
     },
@@ -133,6 +192,56 @@
         {
           "type": "address",
           "name": "_realEstateAddress"
+        },
+        {
+          "type": "string",
+          "name": "_masterAccessCode"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "dateAvailability",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": ""
+        },
+        {
+          "type": "bytes32",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "dateVaults",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": ""
+        },
+        {
+          "type": "bytes32",
+          "name": ""
         }
       ],
       "outputs": [
@@ -185,6 +294,59 @@
     },
     {
       "type": "function",
+      "name": "getDateVault",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": "_parentVaultId"
+        },
+        {
+          "type": "uint256",
+          "name": "_checkInDate"
+        },
+        {
+          "type": "uint256",
+          "name": "_checkOutDate"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getOrCreateDateVault",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": "_parentVaultId"
+        },
+        {
+          "type": "uint256",
+          "name": "_checkInDate"
+        },
+        {
+          "type": "uint256",
+          "name": "_checkOutDate"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "getOwnerVaults",
       "constant": true,
       "stateMutability": "view",
@@ -198,6 +360,25 @@
       "outputs": [
         {
           "type": "string[]",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getParentVault",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "_subVaultAddress"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "string",
           "name": ""
         }
       ]
@@ -243,6 +424,10 @@
               "name": "vaultAddress"
             },
             {
+              "type": "address",
+              "name": "realEstateAddress"
+            },
+            {
               "type": "string",
               "name": "vaultId"
             },
@@ -263,6 +448,33 @@
               "name": "isActive"
             }
           ]
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "isDateRangeAvailable",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": "_vaultId"
+        },
+        {
+          "type": "uint256",
+          "name": "_checkInDate"
+        },
+        {
+          "type": "uint256",
+          "name": "_checkOutDate"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": ""
         }
       ]
     },
@@ -333,11 +545,51 @@
     },
     {
       "type": "function",
+      "name": "releaseDateRange",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": "_parentVaultId"
+        },
+        {
+          "type": "uint256",
+          "name": "_checkInDate"
+        },
+        {
+          "type": "uint256",
+          "name": "_checkOutDate"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
       "name": "renounceOwnership",
       "constant": false,
       "payable": false,
       "inputs": [],
       "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "subVaultToParent",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "string",
+          "name": ""
+        }
+      ]
     },
     {
       "type": "function",
@@ -389,6 +641,10 @@
         {
           "type": "address",
           "name": "vaultAddress"
+        },
+        {
+          "type": "address",
+          "name": "realEstateAddress"
         },
         {
           "type": "string",

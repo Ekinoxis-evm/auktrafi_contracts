@@ -7,14 +7,23 @@ This directory contains all the system diagrams and flowcharts for the Digital H
 ### `digital-house-flow.mmd`
 **Main System Flow Diagram**
 - Shows the complete user journey from reservation to check-out
-- Includes auction system and citizen value distribution
-- Displays all possible states and transitions
+- **UPDATED**: Now includes Sub-Vault system for date-specific bookings
+- Includes auction system and new payment distribution logic
+- Displays master access code inheritance from parent vaults
+
+### `subvault-architecture.mmd`
+**Sub-Vault Architecture Diagram** ⭐ NEW
+- Comprehensive view of the Parent Vault → Sub-Vault relationship
+- Shows how multiple users can book different dates simultaneously
+- Illustrates the booking flow and state management
+- Demonstrates property inheritance and access code system
 
 ### `sequenceDiagram.mmd`
 **Sequence Diagram**
 - Detailed interaction between all system components
 - Shows the complete process with cession (citizen value)
 - Includes all actors: Hotel, Factory, Vault, Users, PYUSD Token, Digital House
+- **NOTE**: Needs updating for Sub-Vault system
 
 ## 🔧 How to View
 

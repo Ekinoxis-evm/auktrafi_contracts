@@ -16,6 +16,7 @@
     "verify:sepolia": "hardhat run scripts/verify.ts --network sepolia",
     "verify:arbitrum": "hardhat run scripts/verify.ts --network arbitrumSepolia",
     "verify:base": "hardhat run scripts/verify.ts --network baseSepolia",
+    "export:abis": "hardhat run scripts/export-abis.ts",
     "node": "hardhat node",
     "console": "hardhat console"
   },

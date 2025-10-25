@@ -1,8 +1,10 @@
 flowchart TD
-    A[🏨 Hotel creates Vault via Factory] --> B{Vault State: FREE}
+    A[🏨 Hotel creates Parent Vault via Factory<br/>🔑 Master Access Code: HOTEL123] --> B{Parent Vault: ACTIVE}
     
-    B --> C[👤 User A creates reservation<br/>Stake: 1,000 PYUSD]
-    C --> D{Vault State: AUCTION}
+    B --> B1[👤 User A wants to book<br/>📅 Dec 1-3, 2024]
+    B1 --> B2[🏭 Factory creates Sub-Vault<br/>ID: HOTEL-001-1733011200-1733270400]
+    B2 --> C[👤 User A creates reservation in Sub-Vault<br/>Stake: 1,000 PYUSD]
+    C --> D{Sub-Vault State: AUCTION}
     
     D --> E[⏰ Auction Period<br/>Until 24hrs before check-in]
     
@@ -21,15 +23,17 @@ flowchart TD
     
     M --> N{Is correct booker?}
     N -->|No| O[❌ Check-in failed]
-    N -->|Yes| P[✅ Check-in successful<br/>Access code generated]
+    N -->|Yes| P[✅ Check-in successful<br/>🔑 Access Code: HOTEL123<br/>📱 Inherited from Parent Vault]
     
-    P --> Q[🏨 Payment to Hotel: 950 PYUSD<br/>🏠 Digital House: 50 PYUSD]
-    Q --> R{Vault State: SETTLED}
+    P --> Q[💰 New Payment Distribution<br/>Base: 950 PYUSD → Hotel, 50 PYUSD → Platform<br/>Additional Value: 40% Current, 30% Last, 20% Hotel, 10% Platform]
+    Q --> R{Sub-Vault State: SETTLED}
     
     R --> S[⏰ Check-out Time]
     S --> T[👤 User checks out]
-    T --> U{Vault State: FREE}
-    U --> B
+    T --> U{Sub-Vault State: FREE}
+    
+    U --> V[🔄 Meanwhile, other users can book<br/>📅 Different dates in same Parent Vault]
+    V --> B1
     
     %% Styling
     classDef userAction fill:#e1f5fe,stroke:#0288d1,stroke-width:1px;
@@ -37,12 +41,12 @@ flowchart TD
     classDef payment fill:#e8f5e8,stroke:#388e3c,stroke-width:1px;
     classDef hotel fill:#fff3e0,stroke:#f57c00,stroke-width:1px;
     
-    class C,G,T userAction
-    class B vaultState
+    class B1,C,G,T userAction
+    class B,B2 vaultState
     class D vaultState
     class R vaultState
     class U vaultState
     class I payment
     class J payment
     class Q payment
-    class A hotel
+    class A,V hotel

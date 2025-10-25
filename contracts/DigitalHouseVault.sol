@@ -45,12 +45,34 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
     Reservation public currentReservation;
     AuctionBid[] public auctionBids;
     
-    // Constantes de distribución
+    // Tracking de bookers para distribución
+    address public originalBooker; // Primer usuario que hizo la reserva
+    address public lastBooker; // Último usuario que cedió la reserva
+    
+    // Constantes de distribución - Base Price
     uint256 constant PAYMENT_REALESTATE_PCT = 95;
     uint256 constant PAYMENT_DIGITALHOUSE_PCT = 5;
-    uint256 constant CITIZEN_HOTEL_PCT = 50;
-    uint256 constant CITIZEN_OWNER_PCT = 30;
-    uint256 constant CITIZEN_DIGITALHOUSE_PCT = 20;
+    
+    // Constantes de distribución - Additional Value (bid - base price)
+    uint256 constant ADDITIONAL_CURRENT_BOOKER_PCT = 40; // Para quien hace check-in
+    uint256 constant ADDITIONAL_LAST_BOOKER_PCT = 30;    // Para quien cedió la reserva
+    uint256 constant ADDITIONAL_REALESTATE_PCT = 20;     // Para el dueño del vault
+    uint256 constant ADDITIONAL_PLATFORM_PCT = 10;      // Para Digital House
+    
+    // Estructura para códigos de acceso
+    struct AccessCode {
+        string code;
+        uint256 timestamp;
+        address booker; // Guardar el booker para autorización posterior
+        bool isActive;
+    }
+    
+    // Storage privado para códigos de acceso
+    mapping(uint256 => AccessCode) private accessCodes; // nonce => AccessCode
+    uint256 public currentAccessCodeNonce;
+    
+    // Código de acceso predefinido por el propietario
+    string public masterAccessCode; // Código maestro definido por el propietario
     
     // Direcciones de recepción
     address public realEstateAddress; // Owner del vault (hotel)
@@ -63,6 +85,7 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
     event ReservationCeded(address indexed originalBooker, address indexed newBooker, uint256 amount);
     event CheckInCompleted(address indexed booker, string accessCode);
     event CheckOutCompleted(address indexed booker, uint256 nonce);
+    event MasterAccessCodeUpdated(address indexed updatedBy, string newCode);
     
     constructor(
         address _pyusdToken,
@@ -70,7 +93,8 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
         address _digitalHouseAddress,
         string memory _vaultId,
         string memory _propertyDetails,
-        uint256 _basePrice
+        uint256 _basePrice,
+        string memory _masterAccessCode
     ) Ownable(msg.sender) {
         pyusdToken = IERC20(_pyusdToken);
         realEstateAddress = _realEstateAddress;
@@ -78,6 +102,7 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
         vaultId = _vaultId;
         propertyDetails = _propertyDetails;
         basePrice = _basePrice;
+        masterAccessCode = _masterAccessCode;
         currentState = VaultState.FREE;
         currentNonce = 1;
     }
@@ -100,6 +125,9 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
             pyusdToken.transferFrom(msg.sender, address(this), _stakeAmount),
             "Transfer failed"
         );
+        
+        // Establecer el booker original para distribución futura
+        originalBooker = msg.sender;
         
         // Crear reserva con 100% ownership (shares)
         currentReservation = Reservation({
@@ -183,41 +211,26 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
         require(winningBid.isActive, "Bid not active");
         require(winningBid.amount > currentReservation.stakeAmount, "Bid must be higher than stake");
         
-        // Calcular el valor adicional (diferencia)
-        uint256 additionalValue = winningBid.amount - currentReservation.stakeAmount;
+        // Guardar el booker actual como lastBooker para distribución futura
+        lastBooker = currentReservation.booker;
         
-        // Calcular distribuciones (Citizen Value) SOLO sobre el valor adicional
-        uint256 hotelAmount = (additionalValue * CITIZEN_HOTEL_PCT) / 100;
-        uint256 ownerAmount = (additionalValue * CITIZEN_OWNER_PCT) / 100;
-        uint256 digitalHouseAmount = (additionalValue * CITIZEN_DIGITALHOUSE_PCT) / 100;
-        
-        // Devolver stake original + valor ciudadano al booker original
-        uint256 returnToOriginalBooker = currentReservation.stakeAmount + ownerAmount;
+        // Solo devolver el stake original al booker que cede (sin distribución adicional)
         require(
-            pyusdToken.transfer(currentReservation.booker, returnToOriginalBooker),
-            "Original booker payment failed"
+            pyusdToken.transfer(currentReservation.booker, currentReservation.stakeAmount),
+            "Stake refund failed"
         );
         
-        // Distribuir el valor adicional inmediatamente según modelo de negocio
-        require(pyusdToken.transfer(realEstateAddress, hotelAmount), "Hotel transfer failed");
-        require(pyusdToken.transfer(digitalHouseAddress, digitalHouseAmount), "Digital House transfer failed");
-        
-        // Tokens restantes: winningBid.amount (nuevo stake para pago normal en checkIn)
-        // Total distribuido: returnToOriginalBooker + hotelAmount + digitalHouseAmount
-        // = 1,150 + 250 + 100 = 1,500
-        // Restantes: 2,500 - 1,500 = 1,000 (el stake original que se paga como normal)
-        
-        // Actualizar reserva al nuevo booker con stake original (no la oferta completa)
-        // porque el valor adicional ya se distribuyó
-        address originalBooker = currentReservation.booker;
+        // Actualizar reserva al nuevo booker con el monto COMPLETO del bid
+        // La distribución del valor adicional se hará en checkIn()
+        address previousBooker = currentReservation.booker;
         currentReservation.booker = winningBid.bidder;
-        currentReservation.stakeAmount = currentReservation.stakeAmount; // Mantener stake original (1,000)
+        currentReservation.stakeAmount = winningBid.amount; // Usar el monto completo del bid
         winningBid.isActive = false;
         
         // Devolver fondos a otros bidders
         _refundOtherBidders(_bidIndex);
         
-        emit ReservationCeded(originalBooker, winningBid.bidder, winningBid.amount);
+        emit ReservationCeded(previousBooker, winningBid.bidder, winningBid.amount);
     }
     
     /**
@@ -232,22 +245,79 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
             "Not check-in time"
         );
         
-        // Distribuir pago (100% del stake)
+        // Nueva lógica de distribución de pagos
         uint256 totalPayment = currentReservation.stakeAmount;
-        uint256 realEstateAmount = (totalPayment * PAYMENT_REALESTATE_PCT) / 100;
-        uint256 digitalHouseAmount = (totalPayment * PAYMENT_DIGITALHOUSE_PCT) / 100;
         
-        require(
-            pyusdToken.transfer(realEstateAddress, realEstateAmount),
-            "Real estate transfer failed"
-        );
-        require(
-            pyusdToken.transfer(digitalHouseAddress, digitalHouseAmount),
-            "Digital house transfer failed"
-        );
+        if (totalPayment > basePrice) {
+            // Hay valor adicional - aplicar nueva distribución
+            uint256 basePortion = basePrice;
+            uint256 additionalValue = totalPayment - basePrice;
+            
+            // Distribución del precio base (95% + 5%)
+            uint256 baseRealEstateAmount = (basePortion * PAYMENT_REALESTATE_PCT) / 100;
+            uint256 baseDigitalHouseAmount = (basePortion * PAYMENT_DIGITALHOUSE_PCT) / 100;
+            
+            // Distribución del valor adicional (40% + 30% + 20% + 10%)
+            uint256 currentBookerAmount = (additionalValue * ADDITIONAL_CURRENT_BOOKER_PCT) / 100;
+            uint256 lastBookerAmount = (additionalValue * ADDITIONAL_LAST_BOOKER_PCT) / 100;
+            uint256 additionalRealEstateAmount = (additionalValue * ADDITIONAL_REALESTATE_PCT) / 100;
+            uint256 additionalPlatformAmount = (additionalValue * ADDITIONAL_PLATFORM_PCT) / 100;
+            
+            // Transferencias del precio base
+            require(
+                pyusdToken.transfer(realEstateAddress, baseRealEstateAmount + additionalRealEstateAmount),
+                "Real estate transfer failed"
+            );
+            require(
+                pyusdToken.transfer(digitalHouseAddress, baseDigitalHouseAmount + additionalPlatformAmount),
+                "Digital house transfer failed"
+            );
+            
+            // Transferir 40% del valor adicional al booker actual (quien hace check-in)
+            require(
+                pyusdToken.transfer(msg.sender, currentBookerAmount),
+                "Current booker transfer failed"
+            );
+            
+            // Transferir 30% del valor adicional al último booker (quien cedió), si existe
+            if (lastBooker != address(0)) {
+                require(
+                    pyusdToken.transfer(lastBooker, lastBookerAmount),
+                    "Last booker transfer failed"
+                );
+            } else {
+                // Si no hay lastBooker, el 30% va al real estate
+                require(
+                    pyusdToken.transfer(realEstateAddress, lastBookerAmount),
+                    "Additional real estate transfer failed"
+                );
+            }
+            
+        } else {
+            // Solo precio base - distribución normal (95% + 5%)
+            uint256 realEstateAmount = (totalPayment * PAYMENT_REALESTATE_PCT) / 100;
+            uint256 digitalHouseAmount = (totalPayment * PAYMENT_DIGITALHOUSE_PCT) / 100;
+            
+            require(
+                pyusdToken.transfer(realEstateAddress, realEstateAmount),
+                "Real estate transfer failed"
+            );
+            require(
+                pyusdToken.transfer(digitalHouseAddress, digitalHouseAmount),
+                "Digital house transfer failed"
+            );
+        }
         
-        // Generar código de 6 dígitos
-        accessCode = _generateAccessCode(currentReservation.nonce);
+        // Usar código maestro predefinido
+        accessCode = masterAccessCode;
+        currentAccessCodeNonce = currentReservation.nonce;
+        
+        accessCodes[currentReservation.nonce] = AccessCode({
+            code: accessCode,
+            timestamp: block.timestamp,
+            booker: msg.sender,
+            isActive: true
+        });
         
         currentState = VaultState.SETTLED;
         
@@ -265,6 +335,11 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
             block.timestamp >= currentReservation.checkOutDate,
             "Not check-out time yet"
         );
+        
+        // Invalidar código de acceso
+        if (accessCodes[currentAccessCodeNonce].isActive) {
+            accessCodes[currentAccessCodeNonce].isActive = false;
+        }
         
         emit CheckOutCompleted(msg.sender, currentReservation.nonce);
         
@@ -287,6 +362,87 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
         
         // Pasar al siguiente bidder si existe
         _moveToNextBidder();
+    }
+    
+    /**
+     * @dev Actualizar código maestro de acceso (solo propietario del vault)
+     */
+    function updateMasterAccessCode(string memory _newCode) external {
+        require(
+            msg.sender == realEstateAddress || msg.sender == owner(),
+            "Only vault owner can update access code"
+        );
+        require(bytes(_newCode).length >= 4 && bytes(_newCode).length <= 12, "Code must be 4-12 characters");
+        
+        masterAccessCode = _newCode;
+        emit MasterAccessCodeUpdated(msg.sender, _newCode);
+    }
+    
+    /**
+     * @dev Obtener código maestro de acceso (solo usuarios autorizados)
+     */
+    function getMasterAccessCode() external view returns (string memory) {
+        require(
+            msg.sender == realEstateAddress || 
+            msg.sender == owner() ||
+            (currentState == VaultState.SETTLED && msg.sender == currentReservation.booker),
+            "Not authorized to view master access code"
+        );
+        
+        return masterAccessCode;
+    }
+    
+    /**
+     * @dev Obtener código de acceso actual (solo usuarios autorizados)
+     */
+    function getCurrentAccessCode() external view returns (string memory) {
+        require(currentAccessCodeNonce > 0, "No access code generated yet");
+        
+        AccessCode storage currentCode = accessCodes[currentAccessCodeNonce];
+        require(
+            msg.sender == currentCode.booker || 
+            msg.sender == owner() || 
+            msg.sender == realEstateAddress,
+            "Not authorized to view access code"
+        );
+        require(currentCode.isActive, "No active access code");
+        
+        return currentCode.code;
+    }
+    
+    /**
+     * @dev Obtener código de acceso por nonce (solo usuarios autorizados)
+     */
+    function getAccessCode(uint256 _nonce) external view returns (string memory) {
+        require(accessCodes[_nonce].booker != address(0), "Access code does not exist");
+        require(accessCodes[_nonce].isActive, "Access code not active");
+        
+        AccessCode storage codeData = accessCodes[_nonce];
+        require(
+            msg.sender == codeData.booker || 
+            msg.sender == owner() || 
+            msg.sender == realEstateAddress,
+            "Not authorized to view access code"
+        );
+        
+        return codeData.code;
+    }
+    
+    /**
+     * @dev Verificar si un código de acceso está activo
+     */
+    function isAccessCodeActive(uint256 _nonce) external view returns (bool) {
+        require(accessCodes[_nonce].booker != address(0), "Access code does not exist");
+        
+        AccessCode storage codeData = accessCodes[_nonce];
+        require(
+            msg.sender == codeData.booker || 
+            msg.sender == owner() || 
+            msg.sender == realEstateAddress,
+            "Not authorized"
+        );
+        
+        return codeData.isActive;
     }
     
     // Funciones internas
@@ -346,6 +502,11 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
         delete auctionBids;
         currentState = VaultState.FREE;
         currentNonce++;
+        
+        // Resetear tracking de bookers para nueva reserva
+        originalBooker = address(0);
+        lastBooker = address(0);
+        // No resetear currentAccessCodeNonce para mantener referencia al último código generado
     }
     
     function _uint2str(uint256 _i) internal pure returns (string memory) {

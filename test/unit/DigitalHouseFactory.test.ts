@@ -39,7 +39,7 @@ describe("DigitalHouseFactory", function () {
       const propertyDetails = "Apartment in Miami";
       const basePrice = ethers.parseUnits("1000", 6); // 1000 PYUSD
 
-      await expect(factory.createVault(vaultId, propertyDetails, basePrice, addr1.address))
+      await expect(factory.createVault(vaultId, propertyDetails, basePrice, addr1.address, "ACCESS123"))
         .to.emit(factory, "VaultCreated");
 
       const vaultInfo = await factory.getVaultInfo(vaultId);
@@ -54,29 +54,39 @@ describe("DigitalHouseFactory", function () {
       const propertyDetails = "Apartment in Miami";
       const basePrice = ethers.parseUnits("1000", 6);
 
-      await factory.createVault(vaultId, propertyDetails, basePrice, addr1.address);
+      await factory.createVault(vaultId, propertyDetails, basePrice, addr1.address, "ACCESS123");
 
       await expect(
-        factory.createVault(vaultId, propertyDetails, basePrice, addr1.address)
+        factory.createVault(vaultId, propertyDetails, basePrice, addr1.address, "ACCESS123")
       ).to.be.revertedWith("Vault ID already exists");
     });
 
     it("Should reject empty vault ID", async function () {
       await expect(
-        factory.createVault("", "Property", ethers.parseUnits("1000", 6), addr1.address)
+        factory.createVault("", "Property", ethers.parseUnits("1000", 6), addr1.address, "ACCESS123")
       ).to.be.revertedWith("Vault ID required");
     });
 
     it("Should reject zero base price", async function () {
       await expect(
-        factory.createVault("VAULT-001", "Property", 0, addr1.address)
+        factory.createVault("VAULT-001", "Property", 0, addr1.address, "ACCESS123")
       ).to.be.revertedWith("Base price must be > 0");
+    });
+
+    it("Should reject invalid access code length", async function () {
+      await expect(
+        factory.createVault("VAULT-001", "Property", ethers.parseUnits("1000", 6), addr1.address, "123") // Too short
+      ).to.be.revertedWith("Access code must be 4-12 characters");
+
+      await expect(
+        factory.createVault("VAULT-001", "Property", ethers.parseUnits("1000", 6), addr1.address, "1234567890123") // Too long
+      ).to.be.revertedWith("Access code must be 4-12 characters");
     });
   });
 
   describe("Vault Management", function () {
     beforeEach(async function () {
-      await factory.createVault("VAULT-001", "Property 1", ethers.parseUnits("1000", 6), addr1.address);
+      await factory.createVault("VAULT-001", "Property 1", ethers.parseUnits("1000", 6), addr1.address, "ACCESS123");
     });
 
     it("Should get vault address", async function () {
@@ -85,7 +95,7 @@ describe("DigitalHouseFactory", function () {
     });
 
     it("Should get all vault IDs", async function () {
-      await factory.createVault("VAULT-002", "Property 2", ethers.parseUnits("2000", 6), addr2.address);
+      await factory.createVault("VAULT-002", "Property 2", ethers.parseUnits("2000", 6), addr2.address, "ACCESS456");
 
       const vaultIds = await factory.getAllVaultIds();
       expect(vaultIds.length).to.equal(2);
