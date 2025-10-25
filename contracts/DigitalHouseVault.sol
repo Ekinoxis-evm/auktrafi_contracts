@@ -2,15 +2,17 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/IDigitalHouseFactory.sol";
+import "./interfaces/IDigitalHouseVault.sol";
 
 /**
  * @title DigitalHouseVault
  * @dev Contrato para gestionar reservas de propiedades con sistema de subastas
+ * @notice Uses Clone pattern (EIP-1167) for gas-efficient deployment
  */
-contract DigitalHouseVault is ReentrancyGuard, Ownable {
+contract DigitalHouseVault is ReentrancyGuardUpgradeable, OwnableUpgradeable {
     
     // Estados del contrato
     enum VaultState { FREE, AUCTION, SETTLED }
@@ -108,7 +110,16 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
     event PaymentReceived(address indexed from, uint256 amount);
     event EarningsWithdrawn(address indexed recipient, uint256 amount);
     
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+    
+    /**
+     * @dev Initialize the vault (replaces constructor for clone pattern)
+     * @notice Called once after cloning to set up the vault
+     */
+    function initialize(
         address _pyusdToken,
         address _realEstateAddress,
         address _digitalHouseAddress,
@@ -116,17 +127,20 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
         string memory _propertyDetails,
         uint256 _dailyBasePrice,
         string memory _masterAccessCode
-    ) Ownable(msg.sender) {
+    ) external initializer {
+        __ReentrancyGuard_init();
+        __Ownable_init(msg.sender);
+        
         pyusdToken = IERC20(_pyusdToken);
         realEstateAddress = _realEstateAddress;
         digitalHouseAddress = _digitalHouseAddress;
         vaultId = _vaultId;
         propertyDetails = _propertyDetails;
-        dailyBasePrice = _dailyBasePrice; // Now represents daily base price
+        dailyBasePrice = _dailyBasePrice;
         masterAccessCode = _masterAccessCode;
         currentState = VaultState.FREE;
         currentNonce = 1;
-        factoryAddress = msg.sender; // Factory is the deployer
+        factoryAddress = msg.sender; // Factory is the initializer
     }
     
     /**
@@ -270,6 +284,7 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
         
         // Nueva lógica de distribución de pagos
         uint256 totalPayment = currentReservation.stakeAmount;
+        bool isSubVault = realEstateAddress != address(0); // Sub-vault if parent vault address is set
         
         if (totalPayment > dailyBasePrice) {
             // Hay valor adicional - aplicar nueva distribución
@@ -286,34 +301,62 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
             uint256 additionalRealEstateAmount = (additionalValue * ADDITIONAL_REALESTATE_PCT) / 100;
             uint256 additionalPlatformAmount = (additionalValue * ADDITIONAL_PLATFORM_PCT) / 100;
             
-            // Transferencias del precio base
-            require(
-                pyusdToken.transfer(realEstateAddress, baseRealEstateAmount + additionalRealEstateAmount),
-                "Real estate transfer failed"
-            );
-            require(
-                pyusdToken.transfer(digitalHouseAddress, baseDigitalHouseAmount + additionalPlatformAmount),
-                "Digital house transfer failed"
-            );
-            
-            // Transferir 40% del valor adicional al booker actual (quien hace check-in)
-            require(
-                pyusdToken.transfer(msg.sender, currentBookerAmount),
-                "Current booker transfer failed"
-            );
-            
-            // Transferir 30% del valor adicional al último booker (quien cedió), si existe
-            if (lastBooker != address(0)) {
+            if (isSubVault) {
+                // Sub-vault: Send to parent vault via receivePayment()
+                uint256 totalRealEstateAmount = baseRealEstateAmount + additionalRealEstateAmount;
+                if (lastBooker == address(0)) {
+                    totalRealEstateAmount += lastBookerAmount; // Add lastBooker share if no lastBooker
+                }
+                
+                // Approve parent vault to pull funds
+                pyusdToken.approve(realEstateAddress, totalRealEstateAmount);
+                
+                // Call parent vault's receivePayment
+                IDigitalHouseVault(realEstateAddress).receivePayment(totalRealEstateAmount);
+                
+                // Direct transfers for platform, bookers
                 require(
-                    pyusdToken.transfer(lastBooker, lastBookerAmount),
-                    "Last booker transfer failed"
+                    pyusdToken.transfer(digitalHouseAddress, baseDigitalHouseAmount + additionalPlatformAmount),
+                    "Digital house transfer failed"
                 );
+                require(
+                    pyusdToken.transfer(msg.sender, currentBookerAmount),
+                    "Current booker transfer failed"
+                );
+                
+                if (lastBooker != address(0)) {
+                    require(
+                        pyusdToken.transfer(lastBooker, lastBookerAmount),
+                        "Last booker transfer failed"
+                    );
+                }
             } else {
-                // Si no hay lastBooker, el 30% va al real estate
+                // Parent vault: Direct transfers to owner (for testing/legacy support)
+                address recipient = realEstateAddress == address(0) ? owner() : realEstateAddress;
                 require(
-                    pyusdToken.transfer(realEstateAddress, lastBookerAmount),
-                    "Additional real estate transfer failed"
+                    pyusdToken.transfer(recipient, baseRealEstateAmount + additionalRealEstateAmount),
+                    "Real estate transfer failed"
                 );
+                require(
+                    pyusdToken.transfer(digitalHouseAddress, baseDigitalHouseAmount + additionalPlatformAmount),
+                    "Digital house transfer failed"
+                );
+                require(
+                    pyusdToken.transfer(msg.sender, currentBookerAmount),
+                    "Current booker transfer failed"
+                );
+                
+                if (lastBooker != address(0)) {
+                    require(
+                        pyusdToken.transfer(lastBooker, lastBookerAmount),
+                        "Last booker transfer failed"
+                    );
+                } else {
+                    require(
+                        pyusdToken.transfer(recipient, lastBookerAmount),
+                        "Additional real estate transfer failed"
+                    );
+                }
             }
             
         } else {
@@ -321,14 +364,27 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
             uint256 realEstateAmount = (totalPayment * PAYMENT_REALESTATE_PCT) / 100;
             uint256 digitalHouseAmount = (totalPayment * PAYMENT_DIGITALHOUSE_PCT) / 100;
             
-            require(
-                pyusdToken.transfer(realEstateAddress, realEstateAmount),
-                "Real estate transfer failed"
-            );
-            require(
-                pyusdToken.transfer(digitalHouseAddress, digitalHouseAmount),
-                "Digital house transfer failed"
-            );
+            if (isSubVault) {
+                // Sub-vault: Send to parent vault
+                pyusdToken.approve(realEstateAddress, realEstateAmount);
+                IDigitalHouseVault(realEstateAddress).receivePayment(realEstateAmount);
+                
+                require(
+                    pyusdToken.transfer(digitalHouseAddress, digitalHouseAmount),
+                    "Digital house transfer failed"
+                );
+            } else {
+                // Parent vault: Direct transfers to owner (for testing/legacy support)
+                address recipient = realEstateAddress == address(0) ? owner() : realEstateAddress;
+                require(
+                    pyusdToken.transfer(recipient, realEstateAmount),
+                    "Real estate transfer failed"
+                );
+                require(
+                    pyusdToken.transfer(digitalHouseAddress, digitalHouseAmount),
+                    "Digital house transfer failed"
+                );
+            }
         }
         
         // Usar código maestro predefinido

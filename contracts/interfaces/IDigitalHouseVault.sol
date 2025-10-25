@@ -62,6 +62,15 @@ interface IDigitalHouseVault {
 
     function checkOut() external;
 
+    // Treasury functions (for parent vaults)
+    function receivePayment(uint256 amount) external;
+    
+    function withdrawEarnings() external;
+    
+    function getEarningsBalance() external view returns (uint256);
+    
+    function getTotalEarnings() external view returns (uint256);
+
     // Funciones de vista
     function getVaultInfo() external view returns (
         VaultState state,

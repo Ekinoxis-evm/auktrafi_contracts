@@ -1,7 +1,7 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 /**
- * Hardhat Ignition Module for deploying DigitalHouseFactory
+ * Hardhat Ignition Module for deploying DigitalHouseFactory with Clone Pattern
  *
  * Usage:
  * npx hardhat ignition deploy ignition/modules/DigitalHouseFactory.ts --network sepolia
@@ -10,6 +10,8 @@ import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
  * Environment Variables Required:
  * - PYUSD_SEPOLIA or PYUSD_ARBITRUM_SEPOLIA (depending on network)
  * - DIGITAL_HOUSE_ADDRESS (Digital House multisig address)
+ * 
+ * Note: This module deploys both the Vault implementation and Factory
  */
 const DigitalHouseFactoryModule = buildModule("DigitalHouseFactoryModule", (m) => {
 
@@ -30,7 +32,7 @@ const DigitalHouseFactoryModule = buildModule("DigitalHouseFactoryModule", (m) =
   // Digital House multisig address (same across networks)
   const digitalHouseAddress = m.getParameter(
     "digitalHouseAddress", 
-    process.env.DIGITAL_HOUSE_ADDRESS || ""
+    process.env.DIGITAL_HOUSE_ADDRESS || "0x854b298d922fDa553885EdeD14a84eb088355822"
   );
 
   // Validate required parameters
@@ -42,14 +44,18 @@ const DigitalHouseFactoryModule = buildModule("DigitalHouseFactoryModule", (m) =
     throw new Error("Digital House address is required (DIGITAL_HOUSE_ADDRESS env var)");
   }
 
-  // Deploy the Factory contract
-  // Constructor: constructor(address _pyusdToken, address _digitalHouseAddress)
+  // Step 1: Deploy Vault Implementation
+  const vaultImplementation = m.contract("DigitalHouseVault", []);
+
+  // Step 2: Deploy the Factory contract with implementation address
+  // Constructor: constructor(address _pyusdToken, address _digitalHouseAddress, address _vaultImplementation)
   const factory = m.contract("DigitalHouseFactory", [
     pyusdToken,
     digitalHouseAddress,
+    vaultImplementation,
   ]);
 
-  return { factory };
+  return { vaultImplementation, factory };
 });
 
 export default DigitalHouseFactoryModule;

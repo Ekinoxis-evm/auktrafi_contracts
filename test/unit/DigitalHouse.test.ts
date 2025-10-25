@@ -23,22 +23,30 @@ describe("🏠 Digital House end-to-end", function () {
     for (const u of [hotel, userA, userB, userC])
       await pyusd.mint(await u.getAddress(), ethers.parseUnits("10000", PYUSD_DECIMALS));
 
-    // Deploy Factory
+    // Deploy Vault Implementation
+    const VaultImpl = await ethers.getContractFactory("DigitalHouseVault");
+    const vaultImpl = await VaultImpl.deploy();
+    await vaultImpl.waitForDeployment();
+
+    // Deploy Factory with implementation address
     const Factory = await ethers.getContractFactory("DigitalHouseFactory");
-    factory = await Factory.deploy(await pyusd.getAddress(), DH_WALLET);
+    factory = await Factory.deploy(
+      await pyusd.getAddress(), 
+      DH_WALLET,
+      await vaultImpl.getAddress()
+    );
     await factory.waitForDeployment();
 
     // Create Vault for hotel
-    const tx = await factory.createVault(
+    const tx = await factory.connect(hotel).createVault(
       "APT-BOG-101-2025",
       '{"city":"Bogota","room":"101"}',
       FLOOR_PRICE,
-      await hotel.getAddress(),
       "HOTEL123" // Master access code
     );
     const receipt = await tx.wait();
-    const evt = receipt.logs.find((l: any) => l.fragment.name === "VaultCreated");
-    const vaultAddr = evt.args.vaultAddress;
+    const evt = receipt.logs.find((l: any) => l.fragment?.name === "VaultCreated");
+    const vaultAddr = evt!.args.vaultAddress;
 
     vault = await ethers.getContractAt("DigitalHouseVault", vaultAddr);
   });

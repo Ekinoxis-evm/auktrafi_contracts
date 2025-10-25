@@ -4,10 +4,12 @@ pragma solidity ^0.8.20;
 import "./DigitalHouseVault.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 
 /**
  * @title DigitalHouseFactory
  * @dev Factory for night-by-night booking management with owner-controlled availability
+ * @notice Uses Clone pattern (EIP-1167) for gas-efficient vault deployment
  */
 contract DigitalHouseFactory is Ownable {
     
@@ -45,6 +47,7 @@ contract DigitalHouseFactory is Ownable {
     
     address public pyusdToken;
     address public digitalHouseAddress;
+    address public vaultImplementation; // Vault implementation for cloning
     
     // Events
     event VaultCreated(string indexed vaultId, address indexed vaultAddress, address indexed owner, uint256 nightPrice);
@@ -53,9 +56,15 @@ contract DigitalHouseFactory is Ownable {
     event NightAvailabilitySet(string indexed vaultId, uint256 nightDate, bool isAvailable);
     event AvailabilityWindowSet(string indexed vaultId, uint256 startNight, uint256 endNight);
     
-    constructor(address _pyusdToken, address _digitalHouseAddress) Ownable(msg.sender) {
+    constructor(
+        address _pyusdToken, 
+        address _digitalHouseAddress,
+        address _vaultImplementation
+    ) Ownable(msg.sender) {
+        require(_vaultImplementation != address(0), "Invalid implementation");
         pyusdToken = _pyusdToken;
         digitalHouseAddress = _digitalHouseAddress;
+        vaultImplementation = _vaultImplementation;
     }
     
     function createVault(
@@ -68,9 +77,13 @@ contract DigitalHouseFactory is Ownable {
         require(_nightPrice > 0, "P");
         require(bytes(_masterAccessCode).length >= 4 && bytes(_masterAccessCode).length <= 12, "C");
         
-        DigitalHouseVault newVault = new DigitalHouseVault(
+        // Clone the vault implementation
+        address vaultAddress = Clones.clone(vaultImplementation);
+        
+        // Initialize the clone
+        DigitalHouseVault(vaultAddress).initialize(
             pyusdToken,
-            address(0),
+            address(0), // Parent vault (no realEstateAddress)
             digitalHouseAddress,
             _vaultId,
             _propertyDetails,
@@ -78,8 +91,8 @@ contract DigitalHouseFactory is Ownable {
             _masterAccessCode
         );
         
-        address vaultAddress = address(newVault);
-        newVault.transferOwnership(msg.sender);
+        // Transfer ownership to the creator
+        DigitalHouseVault(vaultAddress).transferOwnership(msg.sender);
         
         vaults[_vaultId] = VaultInfo({
             vaultAddress: vaultAddress,
@@ -140,8 +153,11 @@ contract DigitalHouseFactory is Ownable {
         
         string memory subVaultId = string(abi.encodePacked(_vaultId, "_n", Strings.toString(_nightDate)));
         
-        // Sub-vault payments go to parent vault address
-        DigitalHouseVault newSubVault = new DigitalHouseVault(
+        // Clone the vault implementation for sub-vault
+        subVaultAddress = Clones.clone(vaultImplementation);
+        
+        // Initialize the clone
+        DigitalHouseVault(subVaultAddress).initialize(
             pyusdToken,
             parentVault.vaultAddress, // Parent vault receives payments
             digitalHouseAddress,
@@ -150,8 +166,6 @@ contract DigitalHouseFactory is Ownable {
             parentVault.nightPrice,
             _masterAccessCode
         );
-        
-        subVaultAddress = address(newSubVault);
         
         nightVaults[_vaultId][_nightDate] = subVaultAddress;
         subVaultToParent[subVaultAddress] = _vaultId;

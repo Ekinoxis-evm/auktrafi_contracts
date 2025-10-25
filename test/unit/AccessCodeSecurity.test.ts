@@ -24,22 +24,30 @@ describe("🔐 Access Code Security Tests", function () {
       await pyusd.mint(await u.getAddress(), ethers.parseUnits("10000", PYUSD_DECIMALS));
     }
 
-    // Deploy Factory
+    // Deploy Vault Implementation
+    const VaultImpl = await ethers.getContractFactory("DigitalHouseVault");
+    const vaultImpl = await VaultImpl.deploy();
+    await vaultImpl.waitForDeployment();
+
+    // Deploy Factory with implementation address
     const Factory = await ethers.getContractFactory("DigitalHouseFactory");
-    factory = await Factory.deploy(await pyusd.getAddress(), DH_WALLET);
+    factory = await Factory.deploy(
+      await pyusd.getAddress(), 
+      DH_WALLET,
+      await vaultImpl.getAddress()
+    );
     await factory.waitForDeployment();
 
     // Create Vault for hotel
-    const tx = await factory.createVault(
+    const tx = await factory.connect(hotel).createVault(
       "SECURITY-TEST-001",
       '{"city":"Security City","room":"101"}',
       BASE_PRICE,
-      await hotel.getAddress(),
       "SECURE123" // Master access code
     );
     const receipt = await tx.wait();
-    const evt = receipt.logs.find((l: any) => l.fragment.name === "VaultCreated");
-    const vaultAddr = evt.args.vaultAddress;
+    const evt = receipt.logs.find((l: any) => l.fragment?.name === "VaultCreated");
+    const vaultAddr = evt!.args.vaultAddress;
 
     vault = await ethers.getContractAt("DigitalHouseVault", vaultAddr);
   });

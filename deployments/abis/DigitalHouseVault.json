@@ -3,36 +3,17 @@
     "type": "constructor",
     "stateMutability": "undefined",
     "payable": false,
-    "inputs": [
-      {
-        "type": "address",
-        "name": "_pyusdToken"
-      },
-      {
-        "type": "address",
-        "name": "_realEstateAddress"
-      },
-      {
-        "type": "address",
-        "name": "_digitalHouseAddress"
-      },
-      {
-        "type": "string",
-        "name": "_vaultId"
-      },
-      {
-        "type": "string",
-        "name": "_propertyDetails"
-      },
-      {
-        "type": "uint256",
-        "name": "_dailyBasePrice"
-      },
-      {
-        "type": "string",
-        "name": "_masterAccessCode"
-      }
-    ]
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidInitialization",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotInitializing",
+    "inputs": []
   },
   {
     "type": "error",
@@ -140,6 +121,18 @@
       {
         "type": "uint256",
         "name": "amount",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "Initialized",
+    "inputs": [
+      {
+        "type": "uint64",
+        "name": "version",
         "indexed": false
       }
     ]
@@ -650,6 +643,43 @@
         "name": ""
       }
     ]
+  },
+  {
+    "type": "function",
+    "name": "initialize",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      {
+        "type": "address",
+        "name": "_pyusdToken"
+      },
+      {
+        "type": "address",
+        "name": "_realEstateAddress"
+      },
+      {
+        "type": "address",
+        "name": "_digitalHouseAddress"
+      },
+      {
+        "type": "string",
+        "name": "_vaultId"
+      },
+      {
+        "type": "string",
+        "name": "_propertyDetails"
+      },
+      {
+        "type": "uint256",
+        "name": "_dailyBasePrice"
+      },
+      {
+        "type": "string",
+        "name": "_masterAccessCode"
+      }
+    ],
+    "outputs": []
   },
   {
     "type": "function",

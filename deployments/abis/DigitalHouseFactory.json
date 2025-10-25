@@ -11,6 +11,29 @@
       {
         "type": "address",
         "name": "_digitalHouseAddress"
+      },
+      {
+        "type": "address",
+        "name": "_vaultImplementation"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "FailedDeployment",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientBalance",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "balance"
+      },
+      {
+        "type": "uint256",
+        "name": "needed"
       }
     ]
   },
@@ -657,6 +680,20 @@
       }
     ],
     "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "vaultImplementation",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "address",
+        "name": ""
+      }
+    ]
   },
   {
     "type": "function",

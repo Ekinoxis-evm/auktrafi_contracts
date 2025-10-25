@@ -29,9 +29,18 @@ describe("Night-by-Night Booking System", function () {
     await mockPYUSD.mint(user1.address, ethers.parseUnits("10000", 6));
     await mockPYUSD.mint(user2.address, ethers.parseUnits("10000", 6));
 
-    // Deploy Factory
+    // Deploy Vault Implementation
+    const VaultImpl = await ethers.getContractFactory("DigitalHouseVault");
+    const vaultImpl = await VaultImpl.deploy();
+    await vaultImpl.waitForDeployment();
+
+    // Deploy Factory with implementation address
     const FactoryFactory = await ethers.getContractFactory("DigitalHouseFactory");
-    factory = await FactoryFactory.deploy(await mockPYUSD.getAddress(), MOCK_DIGITALHOUSE);
+    factory = await FactoryFactory.deploy(
+      await mockPYUSD.getAddress(), 
+      MOCK_DIGITALHOUSE,
+      await vaultImpl.getAddress()
+    );
 
     // Get current timestamp for consistent date calculations
     const latestBlock = await ethers.provider.getBlock("latest");
