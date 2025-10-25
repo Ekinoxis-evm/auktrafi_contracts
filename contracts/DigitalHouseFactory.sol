@@ -7,101 +7,85 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title DigitalHouseFactory
- * @dev Factory para crear y gestionar múltiples vaults de Digital House
+ * @dev Factory for night-by-night booking management with owner-controlled availability
  */
 contract DigitalHouseFactory is Ownable {
     
-    // Estructura de información de vault
     struct VaultInfo {
         address vaultAddress;
-        address realEstateAddress;
         string vaultId;
         string propertyDetails;
-        uint256 basePrice;
+        uint256 nightPrice; // Price per night (2 PM to 12 PM next day)
         uint256 createdAt;
         bool isActive;
     }
     
-    // Mapeo de vaults principales
+    struct NightSubVaultInfo {
+        address subVaultAddress;
+        string subVaultId;
+        uint256 nightDate; // Simple night identifier (day number)
+        VaultState currentState;
+        uint256 nightPrice;
+        uint256 createdAt;
+    }
+    
+    enum VaultState { FREE, AUCTION, SETTLED }
+    
+    // Storage
     mapping(string => VaultInfo) public vaults;
     mapping(address => string[]) public ownerVaults;
     string[] public allVaultIds;
     
-    // Sistema de sub-vaults para fechas específicas
-    mapping(string => mapping(bytes32 => address)) public dateVaults; // parentVaultId => dateHash => subVaultAddress
-    mapping(string => mapping(bytes32 => bool)) public dateAvailability; // parentVaultId => dateHash => isAvailable
-    mapping(address => string) public subVaultToParent; // subVaultAddress => parentVaultId
+    mapping(string => NightSubVaultInfo[]) private parentNightSubVaults;
+    mapping(string => mapping(uint256 => address)) public nightVaults;
+    mapping(address => string) public subVaultToParent;
     
-    // Direcciones globales
+    // Availability Management
+    mapping(string => mapping(uint256 => bool)) public nightAvailability; // vaultId => nightTimestamp => isAvailable
+    
     address public pyusdToken;
-    address public realEstateAddress; // Default hotel address
-    address public digitalHouseAddress; // Digital House multisig
+    address public digitalHouseAddress;
     
-    // Eventos
-    event VaultCreated(
-        string indexed vaultId,
-        address indexed vaultAddress,
-        address indexed owner,
-        uint256 basePrice
-    );
-    event VaultDeactivated(string indexed vaultId);
-    event DateVaultCreated(
-        string indexed parentVaultId,
-        string indexed subVaultId,
-        address indexed subVaultAddress,
-        uint256 checkInDate,
-        uint256 checkOutDate
-    );
-    event DateAvailabilityUpdated(
-        string indexed vaultId,
-        uint256 checkInDate,
-        uint256 checkOutDate,
-        bool isAvailable
-    );
+    // Events
+    event VaultCreated(string indexed vaultId, address indexed vaultAddress, address indexed owner, uint256 nightPrice);
+    event NightVaultCreated(string indexed parentVaultId, string indexed subVaultId, address indexed subVaultAddress, uint256 nightDate, uint256 nightPrice);
+    event NightSubVaultStateUpdated(string indexed parentVaultId, address indexed subVaultAddress, uint256 nightDate, VaultState newState);
+    event NightAvailabilitySet(string indexed vaultId, uint256 nightDate, bool isAvailable);
+    event AvailabilityWindowSet(string indexed vaultId, uint256 startNight, uint256 endNight);
     
-    constructor(
-        address _pyusdToken,
-        address _digitalHouseAddress
-    ) Ownable(msg.sender) {
+    constructor(address _pyusdToken, address _digitalHouseAddress) Ownable(msg.sender) {
         pyusdToken = _pyusdToken;
         digitalHouseAddress = _digitalHouseAddress;
     }
     
-    /**
-     * @dev Crear nuevo vault para una propiedad
-     */
     function createVault(
         string memory _vaultId,
         string memory _propertyDetails,
-        uint256 _basePrice,
-        address _realEstateAddress,
+        uint256 _nightPrice,
         string memory _masterAccessCode
     ) external returns (address) {
-        require(bytes(_vaultId).length > 0, "Vault ID required");
-        require(vaults[_vaultId].vaultAddress == address(0), "Vault ID already exists");
-        require(_basePrice > 0, "Base price must be > 0");
-        require(bytes(_masterAccessCode).length >= 4 && bytes(_masterAccessCode).length <= 12, "Access code must be 4-12 characters");
+        require(bytes(_vaultId).length > 0 && vaults[_vaultId].vaultAddress == address(0), "ID");
+        require(_nightPrice > 0, "P");
+        require(bytes(_masterAccessCode).length >= 4 && bytes(_masterAccessCode).length <= 12, "C");
         
-        // Crear nuevo vault
         DigitalHouseVault newVault = new DigitalHouseVault(
             pyusdToken,
-            _realEstateAddress,
+            address(0),
             digitalHouseAddress,
             _vaultId,
             _propertyDetails,
-            _basePrice,
+            _nightPrice,
             _masterAccessCode
         );
         
         address vaultAddress = address(newVault);
+        newVault.transferOwnership(msg.sender);
         
-        // Guardar información
         vaults[_vaultId] = VaultInfo({
             vaultAddress: vaultAddress,
-            realEstateAddress: _realEstateAddress,
             vaultId: _vaultId,
             propertyDetails: _propertyDetails,
-            basePrice: _basePrice,
+            nightPrice: _nightPrice,
             createdAt: block.timestamp,
             isActive: true
         });
@@ -109,203 +93,109 @@ contract DigitalHouseFactory is Ownable {
         ownerVaults[msg.sender].push(_vaultId);
         allVaultIds.push(_vaultId);
         
-        emit VaultCreated(_vaultId, vaultAddress, msg.sender, _basePrice);
-        
+        emit VaultCreated(_vaultId, vaultAddress, msg.sender, _nightPrice);
         return vaultAddress;
     }
     
-    /**
-     * @dev Desactivar vault
-     */
-    function deactivateVault(string memory _vaultId) external onlyOwner {
-        require(vaults[_vaultId].isActive, "Vault not active");
-        
-        vaults[_vaultId].isActive = false;
-        
-        emit VaultDeactivated(_vaultId);
+    function setNightAvailability(string memory _vaultId, uint256 _nightDate, bool _isAvailable) external {
+        require(msg.sender == Ownable(vaults[_vaultId].vaultAddress).owner(), "Not owner");
+        nightAvailability[_vaultId][_nightDate] = _isAvailable;
+        emit NightAvailabilitySet(_vaultId, _nightDate, _isAvailable);
     }
     
-    /**
-     * @dev Obtener dirección de vault por ID
-     */
+    function setAvailabilityWindow(string memory _vaultId, uint256 _startNight, uint256 _endNight, uint256 _nightCount) external {
+        require(msg.sender == Ownable(vaults[_vaultId].vaultAddress).owner() && _nightCount > 0 && _nightCount <= 365, "Invalid");
+        for (uint256 i = 0; i < _nightCount; i++) nightAvailability[_vaultId][_startNight + i] = true;
+        emit AvailabilityWindowSet(_vaultId, _startNight, _endNight);
+    }
+    
+    function getNightAvailability(string memory _vaultId, uint256 _nightDate) external view returns (bool) {
+        return nightAvailability[_vaultId][_nightDate];
+    }
+    
+    function getNightSubVaultsInfo(string memory parentVaultId) public view returns (NightSubVaultInfo[] memory) {
+        return parentNightSubVaults[parentVaultId];
+    }
+    
+    function getNightSubVault(string memory parentVaultId, uint256 nightDate) public view returns (address) {
+        return nightVaults[parentVaultId][nightDate];
+    }
+    
+    function getOrCreateNightVault(
+        string memory _vaultId,
+        uint256 _nightDate,
+        string memory _masterAccessCode
+    ) external returns (address subVaultAddress) {
+        require(vaults[_vaultId].isActive, "A");
+        require(_nightDate > 0, "D");
+        require(nightAvailability[_vaultId][_nightDate], "N");
+        
+        subVaultAddress = nightVaults[_vaultId][_nightDate];
+        if (subVaultAddress != address(0)) {
+            return subVaultAddress;
+        }
+        
+        VaultInfo memory parentVault = vaults[_vaultId];
+        require(parentVault.vaultAddress != address(0), "P");
+        
+        string memory subVaultId = string(abi.encodePacked(_vaultId, "_n", Strings.toString(_nightDate)));
+        
+        // Sub-vault payments go to parent vault address
+        DigitalHouseVault newSubVault = new DigitalHouseVault(
+            pyusdToken,
+            parentVault.vaultAddress, // Parent vault receives payments
+            digitalHouseAddress,
+            subVaultId,
+            parentVault.propertyDetails,
+            parentVault.nightPrice,
+            _masterAccessCode
+        );
+        
+        subVaultAddress = address(newSubVault);
+        
+        nightVaults[_vaultId][_nightDate] = subVaultAddress;
+        subVaultToParent[subVaultAddress] = _vaultId;
+        
+        parentNightSubVaults[_vaultId].push(NightSubVaultInfo({
+            subVaultAddress: subVaultAddress,
+            subVaultId: subVaultId,
+            nightDate: _nightDate,
+            currentState: VaultState.FREE,
+            nightPrice: parentVault.nightPrice,
+            createdAt: block.timestamp
+        }));
+        
+        emit NightVaultCreated(_vaultId, subVaultId, subVaultAddress, _nightDate, parentVault.nightPrice);
+        return subVaultAddress;
+    }
+    
+    function updateNightSubVaultState(address subVaultAddress, uint8 newState) external {
+        string memory parentVaultId = subVaultToParent[subVaultAddress];
+        require(bytes(parentVaultId).length > 0, "F");
+        
+        NightSubVaultInfo[] storage subVaults = parentNightSubVaults[parentVaultId];
+        for (uint256 i = 0; i < subVaults.length; i++) {
+            if (subVaults[i].subVaultAddress == subVaultAddress) {
+                subVaults[i].currentState = VaultState(newState);
+                emit NightSubVaultStateUpdated(parentVaultId, subVaultAddress, subVaults[i].nightDate, VaultState(newState));
+                break;
+            }
+        }
+    }
+    
     function getVaultAddress(string memory _vaultId) external view returns (address) {
         return vaults[_vaultId].vaultAddress;
     }
     
-    /**
-     * @dev Obtener información completa de vault
-     */
     function getVaultInfo(string memory _vaultId) external view returns (VaultInfo memory) {
         return vaults[_vaultId];
     }
     
-    /**
-     * @dev Obtener todos los vaults de un owner
-     */
     function getOwnerVaults(address _owner) external view returns (string[] memory) {
         return ownerVaults[_owner];
     }
     
-    /**
-     * @dev Obtener todos los vault IDs
-     */
     function getAllVaultIds() external view returns (string[] memory) {
         return allVaultIds;
-    }
-    
-    /**
-     * @dev Actualizar direcciones globales
-     */
-    function updateAddresses(
-        address _pyusdToken,
-        address _realEstateAddress,
-        address _digitalHouseAddress
-    ) external onlyOwner {
-        pyusdToken = _pyusdToken;
-        realEstateAddress = _realEstateAddress;
-        digitalHouseAddress = _digitalHouseAddress;
-    }
-    
-    // ========== SISTEMA DE SUB-VAULTS PARA FECHAS ESPECÍFICAS ==========
-    
-    /**
-     * @dev Obtener o crear sub-vault para fechas específicas
-     */
-    function getOrCreateDateVault(
-        string memory _parentVaultId,
-        uint256 _checkInDate,
-        uint256 _checkOutDate
-    ) external returns (address) {
-        require(vaults[_parentVaultId].isActive, "Parent vault not active");
-        require(_checkInDate > block.timestamp, "Check-in must be in future");
-        require(_checkOutDate > _checkInDate, "Invalid date range");
-        
-        bytes32 dateHash = _generateDateHash(_checkInDate, _checkOutDate);
-        
-        // Si ya existe el sub-vault, devolverlo
-        if (dateVaults[_parentVaultId][dateHash] != address(0)) {
-            return dateVaults[_parentVaultId][dateHash];
-        }
-        
-        // Verificar que las fechas no se solapen con reservas existentes
-        require(_isDateRangeAvailable(_parentVaultId, _checkInDate, _checkOutDate), "Date range not available");
-        
-        // Crear sub-vault ID único
-        string memory subVaultId = string(abi.encodePacked(
-            _parentVaultId, "-", 
-            Strings.toString(_checkInDate), "-", 
-            Strings.toString(_checkOutDate)
-        ));
-        
-        // Obtener información del vault padre
-        VaultInfo storage parentInfo = vaults[_parentVaultId];
-        
-        // Crear nuevo sub-vault
-        DigitalHouseVault subVault = new DigitalHouseVault(
-            pyusdToken,
-            parentInfo.realEstateAddress,
-            digitalHouseAddress,
-            subVaultId,
-            parentInfo.propertyDetails,
-            parentInfo.basePrice,
-            _getParentMasterAccessCode(_parentVaultId)
-        );
-        
-        address subVaultAddress = address(subVault);
-        
-        // Registrar el sub-vault
-        dateVaults[_parentVaultId][dateHash] = subVaultAddress;
-        subVaultToParent[subVaultAddress] = _parentVaultId;
-        dateAvailability[_parentVaultId][dateHash] = false; // Marcar como ocupado
-        
-        emit DateVaultCreated(_parentVaultId, subVaultId, subVaultAddress, _checkInDate, _checkOutDate);
-        
-        return subVaultAddress;
-    }
-    
-    /**
-     * @dev Verificar si un rango de fechas está disponible
-     */
-    function isDateRangeAvailable(
-        string memory _vaultId,
-        uint256 _checkInDate,
-        uint256 _checkOutDate
-    ) external view returns (bool) {
-        return _isDateRangeAvailable(_vaultId, _checkInDate, _checkOutDate);
-    }
-    
-    /**
-     * @dev Obtener sub-vault para fechas específicas (si existe)
-     */
-    function getDateVault(
-        string memory _parentVaultId,
-        uint256 _checkInDate,
-        uint256 _checkOutDate
-    ) external view returns (address) {
-        bytes32 dateHash = _generateDateHash(_checkInDate, _checkOutDate);
-        return dateVaults[_parentVaultId][dateHash];
-    }
-    
-    /**
-     * @dev Obtener vault padre de un sub-vault
-     */
-    function getParentVault(address _subVaultAddress) external view returns (string memory) {
-        return subVaultToParent[_subVaultAddress];
-    }
-    
-    /**
-     * @dev Liberar fechas cuando se completa una reserva (llamado por el sub-vault)
-     */
-    function releaseDateRange(
-        string memory _parentVaultId,
-        uint256 _checkInDate,
-        uint256 _checkOutDate
-    ) external {
-        // Solo el sub-vault puede liberar sus fechas
-        bytes32 dateHash = _generateDateHash(_checkInDate, _checkOutDate);
-        require(dateVaults[_parentVaultId][dateHash] == msg.sender, "Only sub-vault can release dates");
-        
-        dateAvailability[_parentVaultId][dateHash] = true;
-        emit DateAvailabilityUpdated(_parentVaultId, _checkInDate, _checkOutDate, true);
-    }
-    
-    // ========== FUNCIONES INTERNAS ==========
-    
-    /**
-     * @dev Generar hash único para un rango de fechas
-     */
-    function _generateDateHash(uint256 _checkInDate, uint256 _checkOutDate) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(_checkInDate, _checkOutDate));
-    }
-    
-    /**
-     * @dev Verificar si un rango de fechas está disponible (interno)
-     */
-    function _isDateRangeAvailable(
-        string memory _vaultId,
-        uint256 _checkInDate,
-        uint256 _checkOutDate
-    ) internal view returns (bool) {
-        require(vaults[_vaultId].isActive, "Vault not active");
-        
-        // Por ahora, implementación simple: verificar si ya existe un sub-vault para estas fechas exactas
-        bytes32 dateHash = _generateDateHash(_checkInDate, _checkOutDate);
-        
-        // Si no existe sub-vault para estas fechas, está disponible
-        if (dateVaults[_vaultId][dateHash] == address(0)) {
-            return true;
-        }
-        
-        // Si existe pero está marcado como disponible (reserva completada), también está disponible
-        return dateAvailability[_vaultId][dateHash];
-    }
-    
-    /**
-     * @dev Obtener código maestro del vault padre
-     */
-    function _getParentMasterAccessCode(string memory _parentVaultId) internal view returns (string memory) {
-        address parentVaultAddress = vaults[_parentVaultId].vaultAddress;
-        DigitalHouseVault parentVault = DigitalHouseVault(parentVaultAddress);
-        return parentVault.masterAccessCode();
     }
 }

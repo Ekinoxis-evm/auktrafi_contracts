@@ -1,285 +1,320 @@
-# 🏨 Auktrafi - Decentralized Hotel Booking Platform
+# Digital House - Night-by-Night Booking System 🏨
 
-<div align="center">
+A decentralized booking platform using smart contracts on Ethereum, enabling property owners to tokenize their real estate and manage night-by-night reservations with an auction-based pricing model.
 
-![Solidity](https://img.shields.io/badge/Solidity-0.8.20-blue?logo=solidity)
-![Hardhat](https://img.shields.io/badge/Hardhat-3.x-yellow?logo=hardhat)
-![OpenZeppelin](https://img.shields.io/badge/OpenZeppelin-5.4.0-purple?logo=ethereum)
-![License](https://img.shields.io/badge/License-MIT-green)
+## 🌐 Deployed Contracts
 
-**Revolutionary booking platform with auction system, citizen value distribution, and date-specific sub-vaults**
+### ✅ Ethereum Sepolia
+- **Factory**: [`0x9fc0bdDF5E230256C0eEa3DD9B23EA7c05369865`](https://sepolia.etherscan.io/address/0x9fc0bdDF5E230256C0eEa3DD9B23EA7c05369865)
+- **PYUSD**: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
+- **Chain ID**: `11155111`
+- **Status**: ✅ Deployed & Ready
 
-[🚀 Quick Start](#-quick-start) • [📖 Documentation](#-how-it-works) • [🏗️ Architecture](#️-architecture) • [🌐 Deployed Contracts](#-deployed-contracts)
-
-</div>
-
----
-
-## 🎯 What is Auktrafi?
-
-Auktrafi is a **decentralized hotel booking platform** that transforms traditional reservations into an innovative auction system. Users can book properties, participate in auctions, and earn **citizen value** when they cede their reservations to higher bidders.
-
-### ✨ Key Innovations
-
-- 🏨 **Sub-Vault System**: Multiple users can book different dates for the same property simultaneously
-- 🎯 **Auction Mechanism**: Competitive bidding system for popular dates
-- 💰 **Citizen Value**: Original bookers earn rewards when ceding to higher bidders
-- 🔑 **Master Access Codes**: Property owners control access codes
-- 💳 **PYUSD Payments**: Stable transactions with PayPal USD
-- 🌐 **Multi-chain**: Deployed on Ethereum and Arbitrum
+### ✅ Arbitrum Sepolia
+- **Factory**: [`0xBdB8AcD5c9feA0C7bC5D3ec5F99E2C198526a58F`](https://sepolia.arbiscan.io/address/0xBdB8AcD5c9feA0C7bC5D3ec5F99E2C198526a58F)
+- **PYUSD**: `0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1`
+- **Chain ID**: `421614`
+- **Status**: ✅ Deployed & Ready
 
 ---
 
-## 🔄 How It Works
+## 🎯 How It Works
 
-### 1. 🏨 Property Creation
-Hotels create **Parent Vaults** for their properties with base prices and master access codes.
+### Simple Night Numbers
+Instead of complex timestamps, we use simple sequential numbers:
+- **Night 1, Night 2, Night 3**, etc.
+- Frontend maps these to actual calendar dates
+- No timezone complexity in contracts
 
-### 2. 📅 Date-Specific Booking
-When users want to book specific dates, the system automatically creates **Sub-Vaults** for those dates.
-
-### 3. 🎯 Auction System
-- **First User**: Creates reservation with stake amount
-- **Other Users**: Can place higher bids during auction period
-- **Original Booker**: Can cede reservation to highest bidder (earning citizen value)
-
-### 4. 🏠 Check-in & Access
-- Winner checks in and receives the master access code
-- Payments are distributed according to the citizen value model
-
----
-
-## 💰 Payment Distribution
-
-### 🔹 Standard Payment (No Cession)
-When the original booker checks in without ceding:
-```
-Base Price Distribution:
-├─ 95% → Hotel/Property Owner
-└─ 5%  → Platform Fee
-```
-
-### 🔹 Citizen Value Distribution (With Cession)
-When a reservation is ceded to a higher bidder, the **additional value** is distributed:
+### Three-Level Architecture
 
 ```
-Additional Value = Final Bid - Original Stake
-
-Distribution of Additional Value:
-├─ 40% → Current Booker (who checks in)
-├─ 30% → Last Booker (who ceded)
-├─ 20% → Hotel/Property Owner
-└─ 10% → Platform Fee
-```
-
-**Example:**
-- Original stake: 1,000 PYUSD
-- Winning bid: 1,500 PYUSD
-- Additional value: 500 PYUSD
-
-**Distribution:**
-- Current booker gets: 200 PYUSD (40% of 500)
-- Last booker gets: 150 PYUSD (30% of 500) ✨ **Citizen Value**
-- Hotel gets: 100 PYUSD (20% of 500)
-- Platform gets: 50 PYUSD (10% of 500)
-
----
-
-## 🔑 Access Code System
-
-### Master Access Codes
-- **Property Owner Controlled**: Hotels define their own access codes during vault creation
-- **Updatable**: Property owners can update codes anytime
-- **Inherited**: All sub-vaults inherit the parent vault's master access code
-- **Secure Storage**: Codes are stored privately and only accessible to authorized parties
-
-### Access Code Lifecycle
-1. **Creation**: Property owner sets master code (e.g., "HOTEL2024")
-2. **Inheritance**: Sub-vaults automatically inherit this code
-3. **Check-in**: Winner receives the master access code
-4. **Update**: Property owner can update the master code anytime
-
----
-
-## 🏗️ Architecture
-
-### 📦 Smart Contracts
-
-#### **DigitalHouseFactory.sol**
-Main factory contract that manages all properties and creates sub-vaults.
-
-**Key Functions:**
-- `createVault()` - Create parent vault for property
-- `getOrCreateDateVault()` - Create/get sub-vault for specific dates
-- `isDateRangeAvailable()` - Check date availability
-- `getDateVault()` - Get existing sub-vault
-- `getParentVault()` - Get parent from sub-vault address
-
-#### **DigitalHouseVault.sol**
-Individual vault contracts for each date-specific reservation.
-
-**Key Functions:**
-- `createReservation()` - Make initial reservation
-- `placeBid()` - Place higher bid in auction
-- `cedeReservation()` - Cede to higher bidder
-- `checkIn()` - Check in and receive access code
-- `checkOut()` - Complete stay and reset vault
-
-### 🔄 Sub-Vault System
-
-```
-🏨 HOTEL-MIAMI-001 (Parent Vault)
-├── 📅 Dec 1-3: User A booked → Sub-Vault: HOTEL-MIAMI-001-1733011200-1733270400
-├── 📅 Dec 5-7: User B checked in → Sub-Vault: HOTEL-MIAMI-001-1733443200-1733702400
-├── 📅 Dec 10-12: Available → Sub-Vault: Not created yet
-└── 📅 Dec 15-17: Available → Sub-Vault: Not created yet
+┌─────────────────────────────────────┐
+│   DigitalHouseFactory               │
+│   - Creates parent vaults           │
+│   - Manages availability            │
+│   - Tracks all bookings             │
+└─────────────────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────────────┐
+│   Parent Vault (Property)           │
+│   - Owner: Property owner           │
+│   - Treasury: Collects payments     │
+│   - Withdrawal: Owner withdraws     │
+└─────────────────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────────────┐
+│   Night Sub-Vaults                  │
+│   - One per night (1, 2, 3...)      │
+│   - Handles reservations/auctions   │
+│   - Routes payments to parent       │
+└─────────────────────────────────────┘
 ```
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js >= 18.0.0
-- npm or yarn
-- Git
+> **Note**: This project follows [Hardhat 3 best practices](https://hardhat.org/docs/learn-more/deploying-contracts) using `npx hardhat` commands directly instead of npm scripts.
 
-### 1. Clone and Install
+### 1. Install Dependencies
 ```bash
-git clone https://github.com/Ekinoxis-evm/auktrafi_contracts.git
-cd auktrafi_contracts
 npm install
 ```
 
-### 2. Environment Setup
+### 2. Compile Contracts
 ```bash
-# Create .env file
-cp .env.example .env
-
-# Configure your .env:
-PRIVATE_KEY=your_private_key_here
-ETHERSCAN_API_KEY=your_etherscan_api_key
-DIGITAL_HOUSE_ADDRESS=your_multisig_address
-```
-
-### 3. Compile and Test
-```bash
-# Compile contracts
 npx hardhat compile
-
-# Run all tests
-npm test
-
-# Run specific test suite
-npm test -- --grep "Sub-Vault System"
 ```
 
-### 4. Deploy
+### 3. Run Tests
 ```bash
-# Deploy to Sepolia
+npx hardhat test                                    # All tests
+npx hardhat test test/unit/NightBookingSystem.test.ts  # Night booking tests
+```
+
+### 4. Deploy Contracts
+
+You can deploy using either method:
+
+#### **Method A: Custom Deploy Script (Recommended)**
+```bash
+# Sepolia
 npx hardhat run scripts/deploy.ts --network sepolia
 
-# Deploy to Arbitrum Sepolia
+# Arbitrum Sepolia  
 npx hardhat run scripts/deploy.ts --network arbitrumSepolia
+```
+
+#### **Method B: Hardhat Ignition** 
+```bash
+# Sepolia
+DIGITAL_HOUSE_ADDRESS=0x854b298d922fDa553885EdeD14a84eb088355822 npx hardhat ignition deploy ignition/modules/DigitalHouseFactory.ts --network sepolia
+
+# Arbitrum Sepolia
+DIGITAL_HOUSE_ADDRESS=0x854b298d922fDa553885EdeD14a84eb088355822 npx hardhat ignition deploy ignition/modules/DigitalHouseFactory.ts --network arbitrumSepolia
+```
+
+> **Note**: Method A automatically updates local ABIs and addresses. Method B uses [Hardhat Ignition](https://hardhat.org/docs/learn-more/deploying-contracts) for deterministic deployments.
+
+### 5. Verify Contracts
+```bash
+# Sepolia (use address from deploy output)
+npx hardhat verify --network sepolia 0xYourFactoryAddress "0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9" "0x854b298d922fDa553885EdeD14a84eb088355822"
+
+# Arbitrum Sepolia (use address from deploy output)
+npx hardhat verify --network arbitrumSepolia 0xYourFactoryAddress "0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1" "0x854b298d922fDa553885EdeD14a84eb088355822"
+```
+
+### 6. Update ABIs (after contract changes)
+```bash
+npx hardhat run scripts/update-abis.ts
+```
+
+### 7. Access Deployment Data
+```bash
+# View deployed addresses
+cat deployments/addresses/sepolia.json
+cat deployments/addresses/arbitrumSepolia.json
+
+# View ABIs
+cat deployments/abis/DigitalHouseFactory.json
+cat deployments/abis/DigitalHouseVault.json
 ```
 
 ---
 
-## 🌐 Deployed Contracts
+## 📊 System Architecture
 
-### ✅ Ethereum Sepolia
-- **Factory**: [`0xBdB8AcD5c9feA0C7bC5D3ec5F99E2C198526a58F`](https://sepolia.etherscan.io/address/0xBdB8AcD5c9feA0C7bC5D3ec5F99E2C198526a58F#code)
-- **PYUSD**: `0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9`
-- **Status**: ✅ Verified & Ready
-
-### ✅ Arbitrum Sepolia
-- **Factory**: [`0xC3f3B1192E938A22a79149bbFc6d8218B1bC0117`](https://sepolia.arbiscan.io/address/0xC3f3B1192E938A22a79149bbFc6d8218B1bC0117#code)
-- **PYUSD**: `0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1`
-- **Status**: ✅ Verified & Ready
+For detailed system diagrams and contract flow documentation, see [`docs/README.md`](./docs/README.md).
 
 ---
 
 ## 📚 Usage Examples
 
-### Creating a Property Vault
+### For Property Owners
+
+#### 1. Create a Property Vault
 ```javascript
 const tx = await factory.createVault(
   "HOTEL-MIAMI-001",                    // Unique vault ID
   '{"city":"Miami","rooms":50}',        // Property details JSON
-  ethers.parseUnits("1000", 6),         // Base price: 1000 PYUSD
-  "0x123...abc",                        // Hotel owner address
+  ethers.parseUnits("100", 6),          // 100 PYUSD per night
   "MIAMI2024"                           // Master access code
 );
 ```
 
-### Booking Specific Dates
+#### 2. Set Availability
 ```javascript
-// User wants to book Dec 1-3, 2024
-const checkIn = 1733011200;  // Dec 1, 2024 timestamp
-const checkOut = 1733270400; // Dec 3, 2024 timestamp
-
-// Get or create sub-vault for these dates
-const subVaultAddress = await factory.getOrCreateDateVault(
-  "HOTEL-MIAMI-001", 
-  checkIn, 
-  checkOut
+// Set nights 1-30 as available
+await factory.setAvailabilityWindow(
+  "HOTEL-MIAMI-001",
+  1,      // Start night
+  30,     // End night  
+  30      // Night count
 );
 
-// Create reservation in the sub-vault
-const subVault = new ethers.Contract(subVaultAddress, DigitalHouseVaultABI, signer);
-await pyusd.approve(subVaultAddress, ethers.parseUnits("1000", 6));
+// Or set individual nights
+await factory.setNightAvailability("HOTEL-MIAMI-001", 15, true);
+```
+
+#### 3. Withdraw Earnings
+```javascript
+const parentVault = await ethers.getContractAt(
+  "DigitalHouseVault",
+  parentVaultAddress
+);
+
+// Check balance
+const earnings = await parentVault.getEarningsBalance();
+
+// Withdraw
+await parentVault.withdrawEarnings();
+```
+
+### For Guests
+
+#### 1. Check Availability
+```javascript
+// Check if night 15 is available
+const isAvailable = await factory.getNightAvailability("HOTEL-MIAMI-001", 15);
+
+// Get all sub-vaults for a property
+const subVaults = await factory.getNightSubVaultsInfo("HOTEL-MIAMI-001");
+```
+
+#### 2. Book a Night
+```javascript
+// Create sub-vault for night 15
+const subVaultAddress = await factory.getOrCreateNightVault(
+  "HOTEL-MIAMI-001",
+  15,           // Night number
+  "MIAMI2024"   // Access code
+);
+
+// Create reservation
+const subVault = await ethers.getContractAt("DigitalHouseVault", subVaultAddress);
+const nightPrice = ethers.parseUnits("100", 6);
+
+await pyusd.approve(subVaultAddress, nightPrice);
 await subVault.createReservation(
-  ethers.parseUnits("1000", 6),
-  checkIn,
-  checkOut
+  nightPrice,
+  checkInTimestamp,
+  checkOutTimestamp
 );
 ```
 
-### Checking Date Availability
+#### 3. Place a Bid (During Auction)
 ```javascript
-const isAvailable = await factory.isDateRangeAvailable(
-  "HOTEL-MIAMI-001",
-  1733875200,  // Dec 10, 2024
-  1734134400   // Dec 12, 2024
-);
+const bidAmount = ethers.parseUnits("150", 6);
+await pyusd.approve(subVaultAddress, bidAmount);
+await subVault.placeBid(bidAmount);
+```
 
-console.log(isAvailable ? "✅ Available" : "❌ Booked");
+#### 4. Check In
+```javascript
+// On check-in day
+const accessCode = await subVault.checkIn();
+console.log("Access Code:", accessCode); // Returns master access code
 ```
 
 ---
 
 ## 🧪 Testing
 
-The project includes comprehensive test suites:
+The project includes comprehensive test coverage:
 
 ```bash
-# Run all tests (54 tests)
-npm test
+npx hardhat test
+```
 
-# Specific test suites
-npm test -- --grep "Sub-Vault System"     # 16 tests
-npm test -- --grep "Payment Distribution" # 3 tests
-npm test -- --grep "Access Code"          # 19 tests
+**Test Results:**
+```
+Night-by-Night Booking System
+  ✔ Night number system (simple integers)
+  ✔ Availability management (owner controls)
+  ✔ Sub-vault creation (per night)
+  ✔ Parent vault treasury (centralized payments)
+  ✔ State synchronization (factory tracking)
+  ✔ Single-night bookings
+  ✔ Ownership management
+
+22 passing (615ms)
 ```
 
 **Test Coverage:**
-- ✅ Sub-vault creation and inheritance
-- ✅ Date availability and booking conflicts
-- ✅ Payment distribution scenarios
-- ✅ Access code security and lifecycle
-- ✅ Auction mechanics and cession
-- ✅ Error handling and edge cases
+- Night number system
+- Availability management (set/get/window)
+- Sub-vault creation and properties
+- Parent vault treasury functions
+- State synchronization with factory
+- Single-night booking validation
+- Ownership and access control
+
+---
+
+## 🏗️ Contract Architecture
+
+### DigitalHouseFactory.sol
+Main factory contract for creating and managing property vaults.
+
+**Key Functions:**
+- `createVault()` - Create a new property vault
+- `setNightAvailability()` - Set individual night availability
+- `setAvailabilityWindow()` - Bulk set night availability
+- `getNightAvailability()` - Check if a night is available
+- `getOrCreateNightVault()` - Create sub-vault for a specific night
+- `getNightSubVaultsInfo()` - Get all sub-vaults for a property
+- `updateNightSubVaultState()` - Update sub-vault state (called by sub-vaults)
+
+### DigitalHouseVault.sol
+Individual vault contract for managing reservations and auctions.
+
+**Key Functions:**
+- `createReservation()` - Create initial reservation
+- `placeBid()` - Place bid during auction
+- `cedeReservation()` - Cede reservation to bidder
+- `checkIn()` - Check in and receive access code
+- `checkOut()` - Check out and reset vault
+- `withdrawEarnings()` - Withdraw earnings (parent vaults only)
+- `receivePayment()` - Receive payment from sub-vault
+
+**States:**
+- `FREE` - Available for booking
+- `AUCTION` - Reservation exists, accepting bids
+- `SETTLED` - Guest checked in
+
+---
+
+## 💰 Payment Distribution
+
+### Base Price Distribution (95% / 5%)
+- **95%** → Parent Vault (Property Owner)
+- **5%** → Digital House Platform
+
+### Additional Value Distribution (when bid > base price)
+- **40%** → Current Booker (who checked in)
+- **30%** → Last Booker (who ceded reservation)
+- **20%** → Parent Vault (Property Owner)
+- **10%** → Digital House Platform
+
+### Centralized Treasury
+- All payments route to parent vault contract
+- Owner can withdraw anytime via `withdrawEarnings()`
+- Transparent earnings tracking
 
 ---
 
 ## 🔒 Security Features
 
 - **ReentrancyGuard**: Protection against reentrancy attacks
-- **Access Control**: Ownable pattern for administrative functions
+- **Ownable**: Access control for administrative functions
 - **Input Validation**: Comprehensive parameter validation
 - **Safe Transfers**: Secure PYUSD token transfers
 - **Event Logging**: Complete audit trail
-- **Date Validation**: Prevents invalid booking ranges
+- **State Synchronization**: Real-time state updates to factory
 
 ---
 
@@ -288,60 +323,177 @@ npm test -- --grep "Access Code"          # 19 tests
 ### Project Structure
 ```
 contracts/
-├── DigitalHouseFactory.sol      # Main factory contract
-├── DigitalHouseVault.sol        # Individual vault logic
-└── interfaces/                  # Contract interfaces
+├── DigitalHouseFactory.sol          # Main factory
+├── DigitalHouseVault.sol            # Individual vaults
+├── interfaces/
+│   ├── IDigitalHouseFactory.sol     # Factory interface
+│   └── IDigitalHouseVault.sol       # Vault interface
+└── mocks/
+    └── MockPYUSD.sol                # Mock PYUSD for testing
+
+deployments/
+├── abis/
+│   ├── DigitalHouseFactory.json     # Pure Factory ABI
+│   └── DigitalHouseVault.json       # Pure Vault ABI
+└── addresses/
+    ├── sepolia.json                 # Sepolia deployment addresses
+    └── arbitrumSepolia.json         # Arbitrum Sepolia addresses
 
 test/unit/
-├── SubVaultSystem.test.ts       # Sub-vault functionality
-├── PaymentDistribution.test.ts  # Payment logic
-├── AccessCodeSecurity.test.ts   # Access code tests
-└── ...
+├── NightBookingSystem.test.ts       # Night booking tests (22 tests)
+├── DigitalHouse.test.ts             # End-to-end tests
+└── DigitalHouseFactory.test.ts      # Factory tests
 
-docs/diagrams/
-├── digital-house-flow.mmd       # Main system flow
-├── subvault-architecture.mmd    # Sub-vault architecture
-└── README.md                    # Diagram documentation
+scripts/
+├── deploy.ts                        # Deployment script with ABI/address separation
+└── verify.ts                        # Verification script
 ```
 
 ### Tech Stack
 - **Framework**: Hardhat 3.x
 - **Language**: Solidity 0.8.20
-- **Testing**: Mocha + Chai
-- **Security**: OpenZeppelin 5.4.0
-- **Token**: PYUSD (PayPal USD)
+- **Testing**: Mocha + Chai + Ethers v6
+- **Token**: PYUSD (ERC-20)
+
+### Configuration
+```typescript
+// hardhat.config.ts
+solidity: {
+  version: "0.8.20",
+  settings: {
+    optimizer: {
+      enabled: true,
+      runs: 1  // Optimized for contract size
+    }
+  }
+}
+```
+
+### Deployment Structure
+The project uses a **local-first** approach with clean separation between ABIs and addresses:
+
+**ABIs (Pure Interface)**:
+- `deployments/abis/DigitalHouseFactory.json` - Factory contract interface
+- `deployments/abis/DigitalHouseVault.json` - Vault contract interface
+
+**Addresses (Network-Specific)**:
+- `deployments/addresses/sepolia.json` - Sepolia deployment info
+- `deployments/addresses/arbitrumSepolia.json` - Arbitrum deployment info
+
+**Automated Management**:
+- 🔄 **Auto-update**: Deploy script automatically updates local ABIs and addresses
+- 📦 **ABI Sync**: `npx hardhat run scripts/update-abis.ts` keeps ABIs in sync with compiled contracts
+- 🔍 **Native Verification**: Uses Hardhat 3's built-in `npx hardhat verify` command
+- 📁 **Local Focus**: No external dependencies - everything managed locally
+
+**Benefits**:
+- ✅ Clean separation of concerns
+- ✅ Automatic local updates on deployment
+- ✅ Version control friendly
+- ✅ No external folder dependencies
+- ✅ Sourcify issues handled gracefully
+- ✅ Professional deployment tracking
+
+---
+
+## 📝 Key Features
+
+### ✨ Night-by-Night System
+- Simple sequential night numbers (no complex timestamps)
+- Owner-controlled availability
+- Single-night bookings only
+- Individual night bidding
+
+### 🏦 Centralized Treasury
+- All payments route to parent vault
+- Owner withdrawal on demand
+- Transparent earnings tracking
+- No separate real estate address needed
+
+### 🎯 Auction Mechanism
+- First booker sets initial stake
+- Others can bid higher amounts
+- Booker can cede to highest bidder
+- Citizen value distribution on check-in
+
+### 🔐 Access Control
+- Master access code per property
+- Owner can update access code
+- Secure code storage
+- Only authorized parties can view
+
+---
+
+## 🔗 Contract Verification
+
+### Sepolia
+```bash
+npx hardhat verify --network sepolia \
+  0x9fc0bdDF5E230256C0eEa3DD9B23EA7c05369865 \
+  "0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9" \
+  "0x854b298d922fDa553885EdeD14a84eb088355822"
+```
+
+### Arbitrum Sepolia
+```bash
+npx hardhat verify --network arbitrumSepolia \
+  0xBdB8AcD5c9feA0C7bC5D3ec5F99E2C198526a58F \
+  "0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1" \
+  "0x854b298d922fDa553885EdeD14a84eb088355822"
+```
+
+---
+
+## 🌟 What's New (Latest Version)
+
+### Simplified Night System
+- ✅ Removed complex timestamp calculations
+- ✅ Simple night numbers (1, 2, 3...)
+- ✅ No timezone complexity
+- ✅ Easier frontend integration
+
+### Centralized Payments
+- ✅ Parent vault acts as treasury
+- ✅ Owner withdrawal functionality
+- ✅ Removed separate real estate address
+- ✅ Transparent earnings tracking
+
+### Optimized Contracts
+- ✅ Contract size: 24,576 bytes (exactly at limit)
+- ✅ Shortened error messages for size optimization
+- ✅ Ownership transfer to vault creator
+- ✅ State synchronization with factory
+
+### Availability Management
+- ✅ Owner pre-sets available nights
+- ✅ Bulk availability setting
+- ✅ Prevents booking unavailable nights
+- ✅ Individual night control
+
+---
+
+## 📄 License
+
+MIT
 
 ---
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
-## 📄 License
+## 📞 Support
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🔗 Links
-
-- **Repository**: [github.com/Ekinoxis-evm/auktrafi_contracts](https://github.com/Ekinoxis-evm/auktrafi_contracts)
-- **Documentation**: [View Diagrams](docs/diagrams/)
-- **Sepolia Explorer**: [View Contract](https://sepolia.etherscan.io/address/0xBdB8AcD5c9feA0C7bC5D3ec5F99E2C198526a58F#code)
-- **Arbitrum Explorer**: [View Contract](https://sepolia.arbiscan.io/address/0xC3f3B1192E938A22a79149bbFc6d8218B1bC0117#code)
+For questions or issues:
+- Open an issue on GitHub
+- Contact: [Your contact info]
 
 ---
 
-<div align="center">
-
-**⭐ If you find this project useful, please give it a star! ⭐**
-
-Made with ❤️ by the Auktrafi Team
-
-</div>
+**Built with ❤️ for decentralized hospitality**

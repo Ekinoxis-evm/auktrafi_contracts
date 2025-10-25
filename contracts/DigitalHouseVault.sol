@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/IDigitalHouseFactory.sol";
 
 /**
  * @title DigitalHouseVault
@@ -39,7 +40,7 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
     
     string public vaultId;
     string public propertyDetails;
-    uint256 public basePrice;
+    uint256 public dailyBasePrice; // Changed from basePrice to dailyBasePrice
     uint256 public currentNonce;
     
     Reservation public currentReservation;
@@ -75,8 +76,26 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
     string public masterAccessCode; // Código maestro definido por el propietario
     
     // Direcciones de recepción
-    address public realEstateAddress; // Owner del vault (hotel)
+    address public realEstateAddress; // Parent vault address (receives payments) or address(0) for parent vaults
     address public digitalHouseAddress; // Digital House multisig
+    address public factoryAddress; // Factory contract for state synchronization
+    
+    // Modifier para sincronizar estado con Factory
+    modifier notifyStateChange() {
+        _;
+        if (factoryAddress != address(0)) {
+            try IDigitalHouseFactory(factoryAddress).updateNightSubVaultState(
+                address(this), 
+                uint8(currentState)
+            ) {} catch {
+                // Silently fail if factory call fails to avoid blocking transactions
+            }
+        }
+    }
+    
+    // Treasury management for parent vaults
+    mapping(address => uint256) public earnings; // Track earnings per stakeholder
+    uint256 public totalEarnings;
     
     // Eventos
     event ReservationCreated(address indexed booker, uint256 amount, uint256 checkInDate);
@@ -86,6 +105,8 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
     event CheckInCompleted(address indexed booker, string accessCode);
     event CheckOutCompleted(address indexed booker, uint256 nonce);
     event MasterAccessCodeUpdated(address indexed updatedBy, string newCode);
+    event PaymentReceived(address indexed from, uint256 amount);
+    event EarningsWithdrawn(address indexed recipient, uint256 amount);
     
     constructor(
         address _pyusdToken,
@@ -93,7 +114,7 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
         address _digitalHouseAddress,
         string memory _vaultId,
         string memory _propertyDetails,
-        uint256 _basePrice,
+        uint256 _dailyBasePrice,
         string memory _masterAccessCode
     ) Ownable(msg.sender) {
         pyusdToken = IERC20(_pyusdToken);
@@ -101,24 +122,26 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
         digitalHouseAddress = _digitalHouseAddress;
         vaultId = _vaultId;
         propertyDetails = _propertyDetails;
-        basePrice = _basePrice;
+        dailyBasePrice = _dailyBasePrice; // Now represents daily base price
         masterAccessCode = _masterAccessCode;
         currentState = VaultState.FREE;
         currentNonce = 1;
+        factoryAddress = msg.sender; // Factory is the deployer
     }
     
     /**
-     * @dev Crear reserva inicial con stake
+     * @dev Crear reserva inicial con stake (para un día específico)
      */
     function createReservation(
         uint256 _stakeAmount,
         uint256 _checkInDate,
         uint256 _checkOutDate
-    ) external nonReentrant {
+    ) external nonReentrant notifyStateChange {
         require(currentState == VaultState.FREE, "Vault not available");
-        require(_stakeAmount >= basePrice, "Stake below base price");
+        require(_stakeAmount >= dailyBasePrice, "Stake below daily base price");
         require(_checkInDate > block.timestamp, "Check-in must be in future");
-        require(_checkOutDate > _checkInDate, "Invalid dates");
+        // For daily sub-vaults, checkIn and checkOut should be the same day or consecutive
+        require(_checkOutDate >= _checkInDate, "Invalid dates");
         
         // Transfer PYUSD stake
         require(
@@ -148,7 +171,7 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
     /**
      * @dev Hacer una oferta en la subasta
      */
-    function placeBid(uint256 _bidAmount) external nonReentrant {
+    function placeBid(uint256 _bidAmount) external nonReentrant notifyStateChange {
         require(currentState == VaultState.AUCTION, "Not in auction state");
         require(_bidAmount > currentReservation.stakeAmount, "Bid must be higher");
         require(
@@ -197,7 +220,7 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
     /**
      * @dev Original booker decide ceder a una oferta mayor
      */
-    function cedeReservation(uint256 _bidIndex) external nonReentrant {
+    function cedeReservation(uint256 _bidIndex) external nonReentrant notifyStateChange {
         require(msg.sender == currentReservation.booker, "Not original booker");
         require(currentState == VaultState.AUCTION, "Not in auction state");
         require(
@@ -236,7 +259,7 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
     /**
      * @dev Check-in: pagar y obtener código de acceso
      */
-    function checkIn() external nonReentrant returns (string memory accessCode) {
+    function checkIn() external nonReentrant notifyStateChange returns (string memory accessCode) {
         require(msg.sender == currentReservation.booker, "Not the booker");
         require(currentState == VaultState.AUCTION, "Invalid state");
         require(
@@ -248,10 +271,10 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
         // Nueva lógica de distribución de pagos
         uint256 totalPayment = currentReservation.stakeAmount;
         
-        if (totalPayment > basePrice) {
+        if (totalPayment > dailyBasePrice) {
             // Hay valor adicional - aplicar nueva distribución
-            uint256 basePortion = basePrice;
-            uint256 additionalValue = totalPayment - basePrice;
+            uint256 basePortion = dailyBasePrice;
+            uint256 additionalValue = totalPayment - dailyBasePrice;
             
             // Distribución del precio base (95% + 5%)
             uint256 baseRealEstateAmount = (basePortion * PAYMENT_REALESTATE_PCT) / 100;
@@ -328,7 +351,7 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
     /**
      * @dev Check-out: finalizar contrato
      */
-    function checkOut() external nonReentrant {
+    function checkOut() external nonReentrant notifyStateChange {
         require(msg.sender == currentReservation.booker, "Not the booker");
         require(currentState == VaultState.SETTLED, "Not in settled state");
         require(
@@ -350,7 +373,7 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
     /**
      * @dev Cancelar reserva antes del check-in (automático)
      */
-    function cancelReservation() external nonReentrant {
+    function cancelReservation() external nonReentrant notifyStateChange {
         require(msg.sender == currentReservation.booker, "Not the booker");
         require(currentState == VaultState.AUCTION, "Invalid state");
         
@@ -548,6 +571,52 @@ contract DigitalHouseVault is ReentrancyGuard, Ownable {
         uint256,
         uint256
     ) {
-        return (vaultId, currentState, basePrice, currentNonce);
+        return (vaultId, currentState, dailyBasePrice, currentNonce);
+    }
+    
+    // ========== TREASURY FUNCTIONS (for parent vaults) ==========
+    
+    /**
+     * @dev Receive payment from sub-vault (only callable by sub-vaults)
+     */
+    function receivePayment(uint256 amount) external {
+        require(msg.sender != address(0), "Invalid sender");
+        
+        // Transfer PYUSD from sub-vault to this parent vault
+        pyusdToken.transferFrom(msg.sender, address(this), amount);
+        
+        // Track earnings for vault owner
+        earnings[owner()] += amount;
+        totalEarnings += amount;
+        
+        emit PaymentReceived(msg.sender, amount);
+    }
+    
+    /**
+     * @dev Withdraw earnings (only vault owner)
+     */
+    function withdrawEarnings() external nonReentrant {
+        require(msg.sender == owner(), "Only vault owner");
+        uint256 amount = earnings[msg.sender];
+        require(amount > 0, "No earnings to withdraw");
+        
+        earnings[msg.sender] = 0;
+        pyusdToken.transfer(msg.sender, amount);
+        
+        emit EarningsWithdrawn(msg.sender, amount);
+    }
+    
+    /**
+     * @dev Get earnings balance for caller
+     */
+    function getEarningsBalance() external view returns (uint256) {
+        return earnings[msg.sender];
+    }
+    
+    /**
+     * @dev Get total earnings accumulated in vault
+     */
+    function getTotalEarnings() external view returns (uint256) {
+        return totalEarnings;
     }
 }

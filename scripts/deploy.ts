@@ -1,63 +1,184 @@
-import { writeFileSync, mkdirSync, existsSync } from "fs";
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from "fs";
 import path from "path";
 import hre from "hardhat";
+
+interface NetworkConfig {
+  chainId: number;
+  name: string;
+  pyusdAddress: string;
+  explorerUrl: string;
+}
+
+interface DeploymentResult {
+  chainId: number;
+  name: string;
+  contracts: {
+    [contractName: string]: {
+      address: string;
+      deployedAt: string;
+      deployer: string;
+      verified: boolean;
+      external?: boolean;
+    };
+  };
+}
+
+const NETWORK_CONFIGS: Record<string, NetworkConfig> = {
+  sepolia: {
+    chainId: 11155111,
+    name: "sepolia",
+    pyusdAddress: "0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9",
+    explorerUrl: "https://sepolia.etherscan.io"
+  },
+  arbitrumSepolia: {
+    chainId: 421614,
+    name: "arbitrumSepolia", 
+    pyusdAddress: "0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1",
+    explorerUrl: "https://sepolia.arbiscan.io"
+  }
+};
 
 async function main() {
   console.log("🧩 Compilando contratos...");
   await hre.run("compile");
 
   const [deployer] = await hre.ethers.getSigners();
+  const networkName = hre.network.name;
+  const networkConfig = NETWORK_CONFIGS[networkName];
+  
+  if (!networkConfig) {
+    throw new Error(`Network ${networkName} not supported`);
+  }
+
   console.log("🚀 Desplegando con:", deployer.address);
   console.log("💰 Balance:", hre.ethers.formatEther(await hre.ethers.provider.getBalance(deployer.address)), "ETH");
+  console.log("🌐 Network:", networkConfig.name, `(Chain ID: ${networkConfig.chainId})`);
 
-  // Get network-specific addresses
-  const networkName = hre.network.name;
-  let PYUSD_ADDRESS: string;
-  
-  if (networkName === "sepolia") {
-    PYUSD_ADDRESS = process.env.PYUSD_SEPOLIA || "0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9";
-  } else if (networkName === "arbitrumSepolia") {
-    PYUSD_ADDRESS = process.env.PYUSD_ARBITRUM_SEPOLIA || "0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1";
-  } else {
-    // For localhost or other networks, use Sepolia PYUSD as default
-    PYUSD_ADDRESS = process.env.PYUSD_SEPOLIA || "0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9";
-  }
-  
   const DIGITAL_HOUSE_ADDRESS = process.env.DIGITAL_HOUSE_ADDRESS || "0x854b298d922fDa553885EdeD14a84eb088355822";
 
+  // Deploy Factory
   console.log("🏭 Desplegando DigitalHouseFactory...");
   const Factory = await hre.ethers.getContractFactory("DigitalHouseFactory");
-  const contract = await Factory.deploy(PYUSD_ADDRESS, DIGITAL_HOUSE_ADDRESS);
+  const contract = await Factory.deploy(networkConfig.pyusdAddress, DIGITAL_HOUSE_ADDRESS);
   await contract.waitForDeployment();
 
-  const address = await contract.getAddress();
-  console.log(`✅ Contrato desplegado en: ${address}`);
+  const factoryAddress = await contract.getAddress();
+  console.log(`✅ DigitalHouseFactory desplegado en: ${factoryAddress}`);
 
-  const abi = Factory.interface.formatJson();
-  const output = {
-    contractName: "DigitalHouseFactory",
-    address,
-    abi: JSON.parse(abi)
+  // Create deployment directories
+  const deploymentsDir = path.resolve(__dirname, "../deployments");
+  const abisDir = path.join(deploymentsDir, "abis");
+  const addressesDir = path.join(deploymentsDir, "addresses");
+  
+  [deploymentsDir, abisDir, addressesDir].forEach(dir => {
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  });
+
+  // Export/Update ABIs (pure ABIs without addresses)
+  console.log("📦 Actualizando ABIs...");
+  
+  // Factory ABI
+  const factoryAbi = JSON.parse(Factory.interface.formatJson());
+  writeFileSync(
+    path.join(abisDir, "DigitalHouseFactory.json"), 
+    JSON.stringify(factoryAbi, null, 2)
+  );
+  
+  // Vault ABI  
+  const VaultFactory = await hre.ethers.getContractFactory("DigitalHouseVault");
+  const vaultAbi = JSON.parse(VaultFactory.interface.formatJson());
+  writeFileSync(
+    path.join(abisDir, "DigitalHouseVault.json"),
+    JSON.stringify(vaultAbi, null, 2)
+  );
+  
+  console.log("✅ ABIs actualizados localmente");
+
+  // Export/Update network-specific addresses
+  console.log("📍 Actualizando direcciones...");
+  
+  // Read existing address file if it exists
+  const addressFilePath = path.join(addressesDir, `${networkConfig.name}.json`);
+  let deploymentData: DeploymentResult = {
+    chainId: networkConfig.chainId,
+    name: networkConfig.name,
+    contracts: {}
   };
+  
+  if (existsSync(addressFilePath)) {
+    try {
+      const existingContent = JSON.parse(readFileSync(addressFilePath, 'utf8'));
+      deploymentData = existingContent;
+      console.log(`📄 Actualizando archivo existente: ${networkConfig.name}.json`);
+    } catch (error) {
+      console.log(`⚠️  Error leyendo archivo existente, creando nuevo: ${error.message}`);
+    }
+  } else {
+    console.log(`📄 Creando nuevo archivo: ${networkConfig.name}.json`);
+  }
+  
+  // Update with new deployment
+  deploymentData.contracts.DigitalHouseFactory = {
+    address: factoryAddress,
+    deployedAt: new Date().toISOString(),
+    deployer: deployer.address,
+    verified: false
+  };
+  
+  // Keep/Add external contracts info
+  if (!deploymentData.contracts.PYUSD) {
+    deploymentData.contracts.PYUSD = {
+      address: networkConfig.pyusdAddress,
+      deployedAt: "N/A",
+      deployer: "N/A",
+      verified: true,
+      external: true
+    };
+  }
+  
+  if (!deploymentData.contracts.DigitalHouseMultisig) {
+    deploymentData.contracts.DigitalHouseMultisig = {
+      address: DIGITAL_HOUSE_ADDRESS,
+      deployedAt: "N/A",
+      deployer: "N/A",
+      verified: true,
+      external: true
+    };
+  }
 
-  const dir = path.resolve(__dirname, "../abi");
-  if (!existsSync(dir)) mkdirSync(dir);
-  const filePath = path.join(dir, "DigitalHouseFactory.json");
+  // Write updated deployment data
+  writeFileSync(
+    addressFilePath,
+    JSON.stringify(deploymentData, null, 2)
+  );
 
-  writeFileSync(filePath, JSON.stringify(output, null, 2));
-  console.log("📦 ABI y dirección exportados en:", filePath);
-
-  // Log deployment details
+  // Log deployment summary
   console.log("\n📋 Deployment Summary:");
-  console.log("=".repeat(50));
-  console.log("🏭 DigitalHouseFactory:", address);
-  console.log("💴 PYUSD Token:", PYUSD_ADDRESS);
+  console.log("=".repeat(60));
+  console.log("🏭 DigitalHouseFactory:", factoryAddress);
+  console.log("💴 PYUSD Token:", networkConfig.pyusdAddress);
   console.log("🏛️  Digital House Multisig:", DIGITAL_HOUSE_ADDRESS);
   console.log("📱 Deployer:", deployer.address);
-  console.log("🌐 Network:", hre.network.name);
+  console.log("🌐 Network:", `${networkConfig.name} (${networkConfig.chainId})`);
+  console.log("🔗 Explorer:", `${networkConfig.explorerUrl}/address/${factoryAddress}`);
 
-  console.log("\n🔍 Verificar contrato con:");
-  console.log(`npx hardhat verify --network ${hre.network.name} ${address} "${PYUSD_ADDRESS}" "${DIGITAL_HOUSE_ADDRESS}"`);
+  console.log("\n📁 Files Created:");
+  console.log("├── deployments/abis/DigitalHouseFactory.json");
+  console.log("├── deployments/abis/DigitalHouseVault.json");
+  console.log(`└── deployments/addresses/${networkConfig.name}.json`);
+
+  console.log("\n🔍 Para verificar el contrato:");
+  console.log(`npx hardhat verify --network ${networkName} ${factoryAddress} "${networkConfig.pyusdAddress}" "${DIGITAL_HOUSE_ADDRESS}"`);
+  
+  console.log("\n📝 Night-by-Night Booking System Features:");
+  console.log("- Simple night numbers (no complex timestamps)");
+  console.log("- Owner-controlled availability management");
+  console.log("- Centralized treasury in parent vaults");
+  console.log("- Single-night bookings with individual bidding");
+  
+  console.log("\n🛠️  Comandos útiles:");
+  console.log(`npx hardhat run scripts/update-abis.ts                    # Actualizar ABIs`);
+  console.log(`npx hardhat verify --network ${networkName} ${factoryAddress} ...  # Verificar contrato`);
 }
 
 main()

@@ -1,0 +1,700 @@
+[
+  {
+    "type": "constructor",
+    "stateMutability": "undefined",
+    "payable": false,
+    "inputs": [
+      {
+        "type": "address",
+        "name": "_pyusdToken"
+      },
+      {
+        "type": "address",
+        "name": "_digitalHouseAddress"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "owner"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "account"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "AvailabilityWindowSet",
+    "inputs": [
+      {
+        "type": "string",
+        "name": "vaultId",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "startNight",
+        "indexed": false
+      },
+      {
+        "type": "uint256",
+        "name": "endNight",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "NightAvailabilitySet",
+    "inputs": [
+      {
+        "type": "string",
+        "name": "vaultId",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "nightDate",
+        "indexed": false
+      },
+      {
+        "type": "bool",
+        "name": "isAvailable",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "NightSubVaultStateUpdated",
+    "inputs": [
+      {
+        "type": "string",
+        "name": "parentVaultId",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "subVaultAddress",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "nightDate",
+        "indexed": false
+      },
+      {
+        "type": "uint8",
+        "name": "newState",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "NightVaultCreated",
+    "inputs": [
+      {
+        "type": "string",
+        "name": "parentVaultId",
+        "indexed": true
+      },
+      {
+        "type": "string",
+        "name": "subVaultId",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "subVaultAddress",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "nightDate",
+        "indexed": false
+      },
+      {
+        "type": "uint256",
+        "name": "nightPrice",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "OwnershipTransferred",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "previousOwner",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "newOwner",
+        "indexed": true
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "VaultCreated",
+    "inputs": [
+      {
+        "type": "string",
+        "name": "vaultId",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "vaultAddress",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "owner",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "nightPrice",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "allVaultIds",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": ""
+      }
+    ],
+    "outputs": [
+      {
+        "type": "string",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "createVault",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      {
+        "type": "string",
+        "name": "_vaultId"
+      },
+      {
+        "type": "string",
+        "name": "_propertyDetails"
+      },
+      {
+        "type": "uint256",
+        "name": "_nightPrice"
+      },
+      {
+        "type": "string",
+        "name": "_masterAccessCode"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "address",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "digitalHouseAddress",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "address",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "getAllVaultIds",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "string[]",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "getNightAvailability",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {
+        "type": "string",
+        "name": "_vaultId"
+      },
+      {
+        "type": "uint256",
+        "name": "_nightDate"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "bool",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "getNightSubVault",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {
+        "type": "string",
+        "name": "parentVaultId"
+      },
+      {
+        "type": "uint256",
+        "name": "nightDate"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "address",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "getNightSubVaultsInfo",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {
+        "type": "string",
+        "name": "parentVaultId"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "tuple[]",
+        "name": "",
+        "components": [
+          {
+            "type": "address",
+            "name": "subVaultAddress"
+          },
+          {
+            "type": "string",
+            "name": "subVaultId"
+          },
+          {
+            "type": "uint256",
+            "name": "nightDate"
+          },
+          {
+            "type": "uint8",
+            "name": "currentState"
+          },
+          {
+            "type": "uint256",
+            "name": "nightPrice"
+          },
+          {
+            "type": "uint256",
+            "name": "createdAt"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "getOrCreateNightVault",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      {
+        "type": "string",
+        "name": "_vaultId"
+      },
+      {
+        "type": "uint256",
+        "name": "_nightDate"
+      },
+      {
+        "type": "string",
+        "name": "_masterAccessCode"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "address",
+        "name": "subVaultAddress"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "getOwnerVaults",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {
+        "type": "address",
+        "name": "_owner"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "string[]",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "getVaultAddress",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {
+        "type": "string",
+        "name": "_vaultId"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "address",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "getVaultInfo",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {
+        "type": "string",
+        "name": "_vaultId"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "tuple",
+        "name": "",
+        "components": [
+          {
+            "type": "address",
+            "name": "vaultAddress"
+          },
+          {
+            "type": "string",
+            "name": "vaultId"
+          },
+          {
+            "type": "string",
+            "name": "propertyDetails"
+          },
+          {
+            "type": "uint256",
+            "name": "nightPrice"
+          },
+          {
+            "type": "uint256",
+            "name": "createdAt"
+          },
+          {
+            "type": "bool",
+            "name": "isActive"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "nightAvailability",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {
+        "type": "string",
+        "name": ""
+      },
+      {
+        "type": "uint256",
+        "name": ""
+      }
+    ],
+    "outputs": [
+      {
+        "type": "bool",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "nightVaults",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {
+        "type": "string",
+        "name": ""
+      },
+      {
+        "type": "uint256",
+        "name": ""
+      }
+    ],
+    "outputs": [
+      {
+        "type": "address",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "address",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "ownerVaults",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {
+        "type": "address",
+        "name": ""
+      },
+      {
+        "type": "uint256",
+        "name": ""
+      }
+    ],
+    "outputs": [
+      {
+        "type": "string",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "pyusdToken",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "address",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "renounceOwnership",
+    "constant": false,
+    "payable": false,
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "setAvailabilityWindow",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      {
+        "type": "string",
+        "name": "_vaultId"
+      },
+      {
+        "type": "uint256",
+        "name": "_startNight"
+      },
+      {
+        "type": "uint256",
+        "name": "_endNight"
+      },
+      {
+        "type": "uint256",
+        "name": "_nightCount"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "setNightAvailability",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      {
+        "type": "string",
+        "name": "_vaultId"
+      },
+      {
+        "type": "uint256",
+        "name": "_nightDate"
+      },
+      {
+        "type": "bool",
+        "name": "_isAvailable"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "subVaultToParent",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {
+        "type": "address",
+        "name": ""
+      }
+    ],
+    "outputs": [
+      {
+        "type": "string",
+        "name": ""
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      {
+        "type": "address",
+        "name": "newOwner"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "updateNightSubVaultState",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      {
+        "type": "address",
+        "name": "subVaultAddress"
+      },
+      {
+        "type": "uint8",
+        "name": "newState"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "vaults",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {
+        "type": "string",
+        "name": ""
+      }
+    ],
+    "outputs": [
+      {
+        "type": "address",
+        "name": "vaultAddress"
+      },
+      {
+        "type": "string",
+        "name": "vaultId"
+      },
+      {
+        "type": "string",
+        "name": "propertyDetails"
+      },
+      {
+        "type": "uint256",
+        "name": "nightPrice"
+      },
+      {
+        "type": "uint256",
+        "name": "createdAt"
+      },
+      {
+        "type": "bool",
+        "name": "isActive"
+      }
+    ]
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "chainId": 11155111,
+  "name": "sepolia",
+  "contracts": {
+    "DigitalHouseFactory": {
+      "address": "0x8d0A0Ff1516ff56b36f55D0348D58A63b2751E91",
+      "deployedAt": "2025-10-25T11:44:36.993Z",
+      "deployer": "0x854b298d922fDa553885EdeD14a84eb088355822",
+      "verified": false
+    },
+    "PYUSD": {
+      "address": "0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9",
+      "deployedAt": "N/A",
+      "deployer": "N/A",
+      "verified": true,
+      "external": true
+    },
+    "DigitalHouseMultisig": {
+      "address": "0x1234567890123456789012345678901234567890",
+      "deployedAt": "N/A",
+      "deployer": "N/A",
+      "verified": true,
+      "external": true
+    }
+  }
+}

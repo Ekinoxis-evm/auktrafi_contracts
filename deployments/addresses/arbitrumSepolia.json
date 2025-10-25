@@ -1,0 +1,26 @@
+{
+  "chainId": 421614,
+  "name": "arbitrumSepolia",
+  "contracts": {
+    "DigitalHouseFactory": {
+      "address": "0xBdB8AcD5c9feA0C7bC5D3ec5F99E2C198526a58F",
+      "deployedAt": "2024-12-28T10:35:00Z",
+      "deployer": "0x854b298d922fDa553885EdeD14a84eb088355822",
+      "verified": false
+    },
+    "PYUSD": {
+      "address": "0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1",
+      "deployedAt": "N/A",
+      "deployer": "N/A",
+      "verified": true,
+      "external": true
+    },
+    "DigitalHouseMultisig": {
+      "address": "0x854b298d922fDa553885EdeD14a84eb088355822",
+      "deployedAt": "N/A",
+      "deployer": "N/A",
+      "verified": true,
+      "external": true
+    }
+  }
+}

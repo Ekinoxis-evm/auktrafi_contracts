@@ -34,43 +34,43 @@ describe("DigitalHouseFactory", function () {
   });
 
   describe("Vault Creation", function () {
-    it("Should create a new vault", async function () {
+    it("Should create a new vault with daily pricing", async function () {
       const vaultId = "VAULT-001";
       const propertyDetails = "Apartment in Miami";
-      const basePrice = ethers.parseUnits("1000", 6); // 1000 PYUSD
+      const dailyBasePrice = ethers.parseUnits("100", 6); // 100 PYUSD per day
 
-      await expect(factory.createVault(vaultId, propertyDetails, basePrice, addr1.address, "ACCESS123"))
+      await expect(factory.createVault(vaultId, propertyDetails, dailyBasePrice, addr1.address, "ACCESS123"))
         .to.emit(factory, "VaultCreated");
 
       const vaultInfo = await factory.getVaultInfo(vaultId);
       expect(vaultInfo.vaultId).to.equal(vaultId);
       expect(vaultInfo.propertyDetails).to.equal(propertyDetails);
-      expect(vaultInfo.basePrice).to.equal(basePrice);
+      expect(vaultInfo.basePrice).to.equal(dailyBasePrice); // Now represents daily price
       expect(vaultInfo.isActive).to.be.true;
     });
 
     it("Should reject duplicate vault IDs", async function () {
       const vaultId = "VAULT-001";
       const propertyDetails = "Apartment in Miami";
-      const basePrice = ethers.parseUnits("1000", 6);
+      const dailyBasePrice = ethers.parseUnits("100", 6);
 
-      await factory.createVault(vaultId, propertyDetails, basePrice, addr1.address, "ACCESS123");
+      await factory.createVault(vaultId, propertyDetails, dailyBasePrice, addr1.address, "ACCESS123");
 
       await expect(
-        factory.createVault(vaultId, propertyDetails, basePrice, addr1.address, "ACCESS123")
+        factory.createVault(vaultId, propertyDetails, dailyBasePrice, addr1.address, "ACCESS123")
       ).to.be.revertedWith("Vault ID already exists");
     });
 
     it("Should reject empty vault ID", async function () {
       await expect(
-        factory.createVault("", "Property", ethers.parseUnits("1000", 6), addr1.address, "ACCESS123")
+        factory.createVault("", "Property", ethers.parseUnits("100", 6), addr1.address, "ACCESS123")
       ).to.be.revertedWith("Vault ID required");
     });
 
-    it("Should reject zero base price", async function () {
+    it("Should reject zero daily base price", async function () {
       await expect(
         factory.createVault("VAULT-001", "Property", 0, addr1.address, "ACCESS123")
-      ).to.be.revertedWith("Base price must be > 0");
+      ).to.be.revertedWith("Daily base price must be > 0");
     });
 
     it("Should reject invalid access code length", async function () {
@@ -103,13 +103,6 @@ describe("DigitalHouseFactory", function () {
       expect(vaultIds[1]).to.equal("VAULT-002");
     });
 
-    it("Should deactivate vault (only owner)", async function () {
-      await expect(factory.deactivateVault("VAULT-001"))
-        .to.emit(factory, "VaultDeactivated")
-        .withArgs("VAULT-001");
-
-      const vaultInfo = await factory.getVaultInfo("VAULT-001");
-      expect(vaultInfo.isActive).to.be.false;
-    });
+    // Note: deactivateVault function removed from compact factory for size optimization
   });
 });
