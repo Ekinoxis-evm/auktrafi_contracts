@@ -126,17 +126,30 @@ async function exportToFrontend() {
     }
   };
 
-  // Write files
+  // Write files to frontend
   const files = [
     { name: "DigitalHouseFactory.json", content: factoryExport },
     { name: "DigitalHouseVault.json", content: vaultExport },
     { name: "addresses.json", content: addressesExport }
   ];
 
+  // Export to frontend
   for (const file of files) {
     const filePath = path.join(frontendDir, file.name);
     writeFileSync(filePath, JSON.stringify(file.content, null, 2));
-    console.log(`✅ ${file.name} exportado`);
+    console.log(`✅ ${file.name} exportado al frontend`);
+  }
+
+  // Also create combined files in deployments directory
+  const deploymentsCombinedDir = path.join(deploymentsDir, "combined");
+  if (!existsSync(deploymentsCombinedDir)) {
+    mkdirSync(deploymentsCombinedDir, { recursive: true });
+  }
+
+  for (const file of files) {
+    const filePath = path.join(deploymentsCombinedDir, file.name);
+    writeFileSync(filePath, JSON.stringify(file.content, null, 2));
+    console.log(`✅ ${file.name} exportado a deployments/combined`);
   }
 
   console.log("\n🎉 Exportación completada!");

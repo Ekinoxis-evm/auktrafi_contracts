@@ -1,0 +1,86 @@
+{
+  "networks": {
+    "sepolia": {
+      "chainId": 11155111,
+      "name": "sepolia",
+      "contracts": {
+        "DigitalHouseFactory": {
+          "address": "0x2B7399bce5fCa0715d98D0aD3FD4661AA261fD6E",
+          "deployedAt": "2025-10-25T12:49:01.864Z",
+          "deployer": "0x854b298d922fDa553885EdeD14a84eb088355822",
+          "verified": true
+        },
+        "PYUSD": {
+          "address": "0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9",
+          "deployedAt": "N/A",
+          "deployer": "N/A",
+          "verified": true,
+          "external": true
+        },
+        "DigitalHouseMultisig": {
+          "address": "0x854b298d922fDa553885EdeD14a84eb088355822",
+          "deployedAt": "N/A",
+          "deployer": "N/A",
+          "verified": true,
+          "external": true
+        },
+        "DigitalHouseVaultImplementation": {
+          "address": "0x847Fc56F9B339db4f977e3cC553f2159A3018F99",
+          "deployedAt": "2025-10-25T12:49:01.864Z",
+          "deployer": "0x854b298d922fDa553885EdeD14a84eb088355822",
+          "verified": false
+        }
+      }
+    },
+    "arbitrumSepolia": {
+      "chainId": 421614,
+      "name": "arbitrumSepolia",
+      "contracts": {
+        "DigitalHouseFactory": {
+          "address": "0xBdB8AcD5c9feA0C7bC5D3ec5F99E2C198526a58F",
+          "deployedAt": "2024-12-28T10:35:00Z",
+          "deployer": "0x854b298d922fDa553885EdeD14a84eb088355822",
+          "verified": true
+        },
+        "PYUSD": {
+          "address": "0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1",
+          "deployedAt": "N/A",
+          "deployer": "N/A",
+          "verified": true,
+          "external": true
+        },
+        "DigitalHouseMultisig": {
+          "address": "0x854b298d922fDa553885EdeD14a84eb088355822",
+          "deployedAt": "N/A",
+          "deployer": "N/A",
+          "verified": true,
+          "external": true
+        }
+      }
+    }
+  },
+  "multisig": "0x854b298d922fDa553885EdeD14a84eb088355822",
+  "contracts": {
+    "factory": {
+      "sepolia": "0x2B7399bce5fCa0715d98D0aD3FD4661AA261fD6E",
+      "arbitrumSepolia": "0xBdB8AcD5c9feA0C7bC5D3ec5F99E2C198526a58F"
+    },
+    "vaultImplementation": {
+      "sepolia": "0x847Fc56F9B339db4f977e3cC553f2159A3018F99"
+    },
+    "pyusd": {
+      "sepolia": "0xCaC524BcA292aaade2DF8A05cC58F0a65B1B3bB9",
+      "arbitrumSepolia": "0x637A1259C6afd7E3AdF63993cA7E58BB438aB1B1"
+    }
+  },
+  "summary": {
+    "totalNetworks": 2,
+    "availableContracts": [
+      "DigitalHouseFactory",
+      "DigitalHouseVaultImplementation",
+      "PYUSD",
+      "DigitalHouseMultisig"
+    ],
+    "lastUpdated": "2025-10-26T14:29:52.019Z"
+  }
+}
