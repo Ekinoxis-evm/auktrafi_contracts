@@ -196,9 +196,15 @@ npx hardhat verify --network sepolia 0xYourFactoryAddress \
   "0xVaultImplementationAddress"
 ```
 
-### 7. Update ABIs
+### 7. Update ABIs and Export to Frontend
 ```bash
-npx hardhat run scripts/update-abis.ts
+# Update everything (ABIs + addresses + frontend export)
+npm run update-all
+
+# Or individually:
+npm run update-abis        # Update ABIs from compiled contracts
+npm run update-addresses   # Standardize addresses across networks  
+npm run export-frontend    # Export ABIs + addresses to frontend
 ```
 
 ---

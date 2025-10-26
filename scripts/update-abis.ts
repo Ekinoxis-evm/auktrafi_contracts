@@ -25,6 +25,9 @@ async function updateABIs() {
     "DigitalHouseFactory",
     "DigitalHouseVault"
   ];
+  
+  // Note: DigitalHouseVaultImplementation uses the same ABI as DigitalHouseVault
+  // since it's the same contract, just deployed as implementation
 
   console.log("📦 Exportando ABIs actualizados...");
   
@@ -37,7 +40,7 @@ async function updateABIs() {
       writeFileSync(abiPath, JSON.stringify(abi, null, 2));
       
       console.log(`✅ ${contractName}.json actualizado`);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ Error actualizando ${contractName}:`, error.message);
     }
   }

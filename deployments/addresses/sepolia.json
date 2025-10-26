@@ -16,7 +16,7 @@
       "external": true
     },
     "DigitalHouseMultisig": {
-      "address": "0x1234567890123456789012345678901234567890",
+      "address": "0x854b298d922fDa553885EdeD14a84eb088355822",
       "deployedAt": "N/A",
       "deployer": "N/A",
       "verified": true,
@@ -26,7 +26,7 @@
       "address": "0x847Fc56F9B339db4f977e3cC553f2159A3018F99",
       "deployedAt": "2025-10-25T12:49:01.864Z",
       "deployer": "0x854b298d922fDa553885EdeD14a84eb088355822",
-      "verified": true
+      "verified": false
     }
   }
 }

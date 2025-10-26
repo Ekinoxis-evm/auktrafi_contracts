@@ -7,7 +7,11 @@
     "test": "hardhat test",
     "test:coverage": "hardhat coverage",
     "test:gas": "REPORT_GAS=true hardhat test",
-    "node": "hardhat node"
+    "node": "hardhat node",
+    "update-abis": "npx ts-node scripts/update-abis.ts",
+    "update-addresses": "npx ts-node scripts/update-addresses.ts",
+    "export-frontend": "npx ts-node scripts/export-to-frontend.ts",
+    "update-all": "npm run update-abis && npm run update-addresses && npm run export-frontend"
   },
   "keywords": [
     "ethereum",
